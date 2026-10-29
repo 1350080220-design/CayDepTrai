@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Quản trị · Lịch tư vấn')}"></head>
+<body class="no-foot-gap">
+<nav th:replace="~{fragments/layout :: nav(false)}"></nav>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<div class="admin-shell">
+    <aside th:replace="~{admin/_side :: side(${section})}"></aside>
+    <main class="admin-main">
+        <h1 class="h3 mb-3">Lịch hẹn tư vấn</h1>
+        <div class="filter-tabs mb-3">
+            <a th:href="@{/admin/tu-van}" th:classappend="${status == null} ? 'active' : ''">Tất cả</a>
+            <a th:each="s : ${statuses}" th:href="@{/admin/tu-van(status=${s})}" th:classappend="${status == s} ? 'active' : ''" th:text="${s.label}">tt</a>
+        </div>
+        <div class="panel">
+            <div class="table-wrap">
+                <table class="table-x">
+                    <thead><tr><th>#</th><th>Thời gian</th><th>Khách hàng</th><th>Nhu cầu</th><th>Trạng thái</th><th style="min-width:300px">Xử lý</th></tr></thead>
+                    <tbody>
+                    <tr th:each="c : ${items}">
+                        <td class="text-soft" th:text="${c.id}">1</td>
+                        <td class="small"><div class="fw-semibold" th:text="${@fmt.time(c.appointmentTime)}">09:00</div>
+                            <div th:text="${@fmt.weekday(c.appointmentTime)} + ', ' + ${@fmt.date(c.appointmentTime)}">ngày</div></td>
+                        <td class="small"><div class="fw-semibold" th:text="${c.fullName}">Tên</div>
+                            <div class="text-soft" th:text="${c.phone} + ' · ' + ${c.email}">liên hệ</div></td>
+                        <td class="small">
+                            <div><span class="pill" th:classappend="${c.ticketType.name() == 'TRAIN'} ? 'pill-train' : 'pill-bus'" th:text="${c.ticketType.label}">Loại</span>
+                                <span class="pill"><i class="bi" th:classappend="${c.channel.icon}"></i><th:block th:text="${c.channel.label}">kênh</th:block></span></div>
+                            <div class="mt-1 fw-semibold" th:text="${c.topic}">chủ đề</div>
+                            <div class="text-soft" th:if="${c.note != null}" th:text="${c.note}">ghi chú</div>
+                        </td>
+                        <td><span class="status" th:classappend="'status-' + ${c.status.css}" th:text="${c.status.label}">tt</span></td>
+                        <td>
+                            <form th:if="${c.status.active}" th:action="@{/admin/tu-van/{id}(id=${c.id})}" method="post" class="d-flex gap-2 flex-wrap" data-loading>
+                                <select class="form-select form-select-sm" name="status" style="max-width:150px" aria-label="Trạng thái mới">
+                                    <option value="CONFIRMED" th:selected="${c.status.name() == 'PENDING'}">Xác nhận</option>
+                                    <option value="DONE" th:selected="${c.status.name() == 'CONFIRMED'}">Đã tư vấn</option>
+                                    <option value="CANCELLED">Hủy lịch</option>
+                                </select>
+                                <input class="form-control form-control-sm" name="adminNote" maxlength="500" placeholder="Ghi chú cho khách" style="flex:1;min-width:120px"
+                                       th:value="${c.adminNote}">
+                                <button class="btn btn-ink btn-sm" type="submit">Lưu</button>
+                            </form>
+                            <div class="small text-soft" th:unless="${c.status.active}" th:text="${c.adminNote != null} ? ${c.adminNote} : 'Đã đóng'">—</div>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(items)}"><td colspan="6" class="text-center text-soft py-4">Không có lịch hẹn.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

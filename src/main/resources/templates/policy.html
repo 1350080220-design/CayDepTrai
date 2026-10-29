@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Giá & chính sách')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: nav(false)}"></nav>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<main>
+    <div class="container">
+        <div class="page-head">
+            <div class="crumbs"><a th:href="@{/}">Trang chủ</a> / Giá & chính sách</div>
+            <h1>Bảng giá & chính sách</h1>
+            <p class="text-soft" style="max-width:70ch">Cách VietGo tính giá, điều kiện áp dụng ưu đãi và quy định hoàn hủy cho từng loại vé.
+                Mọi khoản phí đều hiển thị chi tiết ở bước xác nhận trước khi bạn giữ chỗ.</p>
+            <div class="filter-tabs mt-3">
+                <a href="#tau-hoa"><i class="bi bi-train-front me-1"></i>Vé tàu hỏa</a>
+                <a href="#xe-khach"><i class="bi bi-bus-front me-1"></i>Vé xe khách</a>
+                <a href="#hoan-huy"><i class="bi bi-arrow-counterclockwise me-1"></i>Hoàn hủy</a>
+                <a href="#tu-van"><i class="bi bi-headset me-1"></i>Lịch tư vấn</a>
+            </div>
+        </div>
+
+        <!-- ===================== TAU HOA ===================== -->
+        <section id="tau-hoa" class="section-sm" data-kind="train">
+            <h2 class="mb-3"><i class="bi bi-train-front-fill me-2" style="color:var(--rail)"></i>Vé tàu hỏa</h2>
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="panel panel-pad h-100 reveal">
+                        <h3 class="h6">1. Cước cự ly lũy tiến giảm dần</h3>
+                        <p class="small text-soft">Quãng đường được chia thành ba bậc, mỗi bậc một đơn giá. Đi càng xa, giá bình quân mỗi km càng thấp.</p>
+                        <div class="tier-bar mb-3">
+                            <div style="flex:300;background:var(--rail)">0–300 km · 900đ</div>
+                            <div style="flex:700;background:var(--rail-2)">301–1.000 km · 700đ</div>
+                            <div style="flex:726;background:#3BB3A9">&gt;1.000 km · 500đ</div>
+                        </div>
+                        <table class="policy-table">
+                            <thead><tr><th>Cự ly</th><th class="r">Cước cơ sở (ngồi mềm)</th><th class="r">Bình quân / km</th></tr></thead>
+                            <tbody>
+                            <tr th:each="e : ${distanceTable}">
+                                <td th:text="${e.key} + ' km'">km</td>
+                                <td class="r" th:text="${@fmt.money(e.value)}">0đ</td>
+                                <td class="r" th:text="${@fmt.money(e.value / e.key)}">0đ</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="panel panel-pad h-100 reveal" data-delay="1">
+                        <h3 class="h6">2. Hệ số hạng toa và tầng giường</h3>
+                        <table class="policy-table mb-3">
+                            <thead><tr><th>Hạng toa</th><th class="r">Số chỗ</th><th class="r">Hệ số</th></tr></thead>
+                            <tbody>
+                            <tr th:each="c : ${coachTypes}">
+                                <td th:text="${c.label}">Loại</td>
+                                <td class="r" th:text="${c.capacity}">0</td>
+                                <td class="r" th:text="'× ' + ${#numbers.formatDecimal(c.classFactor, 1, 2)}">1.00</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                        <table class="policy-table">
+                            <thead><tr><th>Tầng giường</th><th class="r">Khoang 6</th><th class="r">Khoang 4</th></tr></thead>
+                            <tbody>
+                            <tr><td>Tầng 1 (dưới)</td><td class="r">× 1,10</td><td class="r">× 1,05</td></tr>
+                            <tr><td>Tầng 2</td><td class="r">× 1,00</td><td class="r">× 1,00</td></tr>
+                            <tr><td>Tầng 3 (trên cùng)</td><td class="r">× 0,90</td><td class="r">—</td></tr>
+                            </tbody>
+                        </table>
+                        <p class="small text-soft mt-2 mb-0">Giá gốc = cước cự ly × hệ số hạng toa × hệ số tầng, làm tròn đến 1.000đ.</p>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="panel panel-pad h-100 reveal">
+                        <h3 class="h6">3. Phụ phí, ưu đãi và phí dịch vụ</h3>
+                        <table class="policy-table">
+                            <tbody>
+                            <tr><td>Phụ phí cao điểm Lễ, Tết (theo ngày tàu chạy)</td><td class="r">+20%</td></tr>
+                            <tr><td>Phụ phí cuối tuần (thứ Sáu – Chủ nhật)</td><td class="r">+5%</td></tr>
+                            <tr><td>Trẻ em từ 6 đến dưới 10 tuổi</td><td class="r">−25%</td></tr>
+                            <tr><td>Học sinh, sinh viên 10 – 35 tuổi (có thẻ)</td><td class="r">−10%</td></tr>
+                            <tr><td>Người cao tuổi từ 60 tuổi</td><td class="r">−15%</td></tr>
+                            <tr><td>Đặt trước ngày đi từ 30 ngày</td><td class="r">−5%</td></tr>
+                            <tr><td>Bảo hiểm hành khách bắt buộc</td><td class="r">1.000đ/khách</td></tr>
+                            </tbody>
+                        </table>
+                        <p class="small text-soft mt-2 mb-0">Phụ phí Lễ Tết và cuối tuần không cộng dồn. Ưu đãi đối tượng không cộng dồn; ưu đãi đặt sớm tính sau ưu đãi đối tượng.</p>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="panel panel-pad h-100 reveal" data-delay="1">
+                        <h3 class="h6">4. Điều kiện đặt vé</h3>
+                        <ul class="small mb-0 ps-3">
+                            <li>Đóng bán trước giờ tàu chạy 60 phút; tối đa 6 vé mỗi đơn.</li>
+                            <li>Giữ chỗ 15 phút; quá hạn chưa thanh toán, chỗ tự động được trả lại.</li>
+                            <li>Hành khách từ 14 tuổi khai báo CCCD 12 số hoặc hộ chiếu; không trùng số trong cùng đơn.</li>
+                            <li>Tuổi tính theo ngày tàu chạy và phải khớp với đối tượng đã chọn.</li>
+                            <li>Trẻ dưới 6 tuổi được miễn vé, đi cùng người lớn và không chiếm chỗ.</li>
+                            <li>Trẻ em phải đi cùng ít nhất một hành khách không phải trẻ em.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================== XE KHACH ===================== -->
+        <section id="xe-khach" class="section-sm" data-kind="bus">
+            <h2 class="mb-3"><i class="bi bi-bus-front-fill me-2" style="color:var(--coach)"></i>Vé xe khách</h2>
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="panel panel-pad h-100 reveal">
+                        <h3 class="h6">1. Giá động theo tỷ lệ lấp đầy</h3>
+                        <p class="small text-soft">Tỷ lệ ghế đã đặt được đo ngay trước khi bạn giữ chỗ. Đặt sớm khi xe còn vắng sẽ được giá gốc.</p>
+                        <div class="occ-gauge mb-2"><div class="bar"><span style="width:100%"></span><i class="tick" style="left:50%"></i><i class="tick" style="left:80%"></i></div></div>
+                        <div class="d-flex justify-content-between small text-soft mb-3"><span>0%</span><span>50%</span><span>80%</span><span>100%</span></div>
+                        <table class="policy-table">
+                            <tbody>
+                            <tr><td>Dưới 50% ghế đã đặt</td><td class="r">+0%</td></tr>
+                            <tr><td>Từ 50% đến dưới 80%</td><td class="r">+5%</td></tr>
+                            <tr><td>Từ 80% trở lên</td><td class="r">+10%</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="panel panel-pad h-100 reveal" data-delay="1">
+                        <h3 class="h6">2. Vị trí ghế, phụ phí và ưu đãi</h3>
+                        <table class="policy-table">
+                            <tbody>
+                            <tr><td>Giường tầng dưới (xe giường nằm 36 chỗ)</td><td class="r">+10%</td></tr>
+                            <tr><td>Hàng ghế VIP đầu xe (Limousine 9 chỗ)</td><td class="r">+15%</td></tr>
+                            <tr><td>Phụ phí Lễ, Tết</td><td class="r">+25%</td></tr>
+                            <tr><td>Phụ phí cuối tuần (thứ Sáu – Chủ nhật)</td><td class="r">+10%</td></tr>
+                            <tr><td>Trẻ em 5 – 11 tuổi</td><td class="r">−30%</td></tr>
+                            <tr><td>Nhóm từ 4 khách trở lên</td><td class="r">−5%</td></tr>
+                            <tr><td>Hành lý vượt 20 kg/khách</td><td class="r">10.000đ/kg</td></tr>
+                            <tr><td>Đón tận nơi bằng xe trung chuyển</td><td class="r">50.000đ/đơn</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="panel panel-pad reveal">
+                        <h3 class="h6">3. Điều kiện đặt vé</h3>
+                        <div class="row small">
+                            <div class="col-md-6">
+                                <ul class="ps-3 mb-0">
+                                    <li>Đóng bán trước giờ xuất bến 30 phút; tối đa 8 ghế mỗi đơn.</li>
+                                    <li>Giữ chỗ 10 phút để thanh toán.</li>
+                                    <li>Điểm đón, điểm trả phải thuộc lộ trình của chuyến; chọn đón tận nơi phải nhập địa chỉ cụ thể.</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <ul class="ps-3 mb-0">
+                                    <li>Hành lý ký gửi tối đa 40 kg/khách.</li>
+                                    <li>Trẻ em khai báo năm sinh; trẻ dưới 5 tuổi đi kèm người lớn không cần mua vé.</li>
+                                    <li>Mỗi đơn phải có ít nhất một hành khách người lớn.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================== HOAN HUY ===================== -->
+        <section id="hoan-huy" class="section-sm">
+            <h2 class="mb-3">Quy định hoàn hủy</h2>
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="panel panel-pad h-100 reveal" data-kind="train">
+                        <h3 class="h6"><i class="bi bi-train-front me-1"></i>Vé tàu hỏa</h3>
+                        <table class="policy-table">
+                            <thead><tr><th>Thời điểm hủy (so với giờ tàu chạy)</th><th class="r">Phí hủy</th></tr></thead>
+                            <tbody>
+                            <tr><td>Từ 24 giờ trở lên</td><td class="r">10%</td></tr>
+                            <tr><td>Từ 4 giờ đến dưới 24 giờ</td><td class="r">20%</td></tr>
+                            <tr><td>Dưới 4 giờ</td><td class="r">Không nhận hủy</td></tr>
+                            </tbody>
+                        </table>
+                        <p class="small text-soft mt-2 mb-0">Phí hủy tối thiểu 10.000đ/vé. Phí bảo hiểm hành khách không được hoàn.</p>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="panel panel-pad h-100 reveal" data-delay="1" data-kind="bus">
+                        <h3 class="h6"><i class="bi bi-bus-front me-1"></i>Vé xe khách</h3>
+                        <table class="policy-table">
+                            <thead><tr><th>Thời điểm hủy (so với giờ xuất bến)</th><th class="r">Phí hủy</th></tr></thead>
+                            <tbody>
+                            <tr><td>Từ 24 giờ trở lên</td><td class="r">10%</td></tr>
+                            <tr><td>Từ 2 giờ đến dưới 24 giờ</td><td class="r">25%</td></tr>
+                            <tr><td>Dưới 2 giờ</td><td class="r">Không nhận hủy</td></tr>
+                            </tbody>
+                        </table>
+                        <p class="small text-soft mt-2 mb-0">Phí đón tận nơi không được hoàn vì xe trung chuyển đã được điều phối.</p>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="alert-x info"><i class="bi bi-info-circle"></i>
+                        <div>Đơn đang giữ chỗ (chưa thanh toán) được hủy miễn phí bất cứ lúc nào. Nếu nhà vận hành hủy chuyến, bạn được hoàn 100%.
+                            Tiền hoàn về tài khoản thanh toán trong 3–7 ngày làm việc.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================== TU VAN ===================== -->
+        <section id="tu-van" class="section-sm">
+            <div class="panel panel-pad reveal">
+                <h2 class="h4">Lịch hẹn tư vấn</h2>
+                <div class="row small">
+                    <div class="col-md-6">
+                        <ul class="ps-3 mb-0">
+                            <li>Mỗi buổi 30 phút, từ 08:00 đến 20:00 (nghỉ trưa 12:00 – 13:00), nghỉ Chủ nhật.</li>
+                            <li>Mỗi khung giờ phục vụ tối đa 3 khách.</li>
+                            <li>Đặt trước ít nhất 2 giờ, tối đa 60 ngày.</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="ps-3 mb-0">
+                            <li>Mỗi tài khoản có tối đa 3 lịch hẹn chưa diễn ra, không trùng khung giờ.</li>
+                            <li>Hủy lịch trước giờ hẹn ít nhất 1 giờ.</li>
+                            <li>Hình thức: tại văn phòng, gọi điện hoặc video call.</li>
+                        </ul>
+                    </div>
+                </div>
+                <a class="btn btn-rail mt-3" th:href="@{/tu-van}">Đặt lịch tư vấn</a>
+            </div>
+        </section>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

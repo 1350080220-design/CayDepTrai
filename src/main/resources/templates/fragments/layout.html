@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="VietGo – đặt vé tàu hỏa và xe khách trực tuyến, chọn chỗ trên sơ đồ, giữ chỗ và thanh toán nhanh.">
+    <title th:text="${title} + ' · VietGo'">VietGo</title>
+    <link rel="icon" type="image/svg+xml" th:href="@{/img/favicon.svg}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap">
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css}">
+    <link rel="stylesheet" th:href="@{/css/main.css}">
+</head>
+<body>
+
+<!-- ============================ NAVBAR ============================ -->
+<nav th:fragment="nav(dark)" class="site-nav navbar navbar-expand-lg" th:classappend="${dark} ? 'on-dark' : ''">
+    <div class="container">
+        <a class="brand" th:href="@{/}">
+            <span class="brand-mark"><i class="bi bi-signpost-split-fill"></i></span>VietGo
+        </a>
+        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
+                aria-controls="mainNav" aria-expanded="false" aria-label="Mở menu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="mainNav">
+            <ul class="navbar-nav mx-lg-auto gap-lg-1 mt-3 mt-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/tau-hoa}"
+                       th:classappend="${#strings.startsWith(currentPath ?: '', '/tau-hoa')} ? 'active' : ''">
+                        <i class="bi bi-train-front me-1"></i>Vé tàu hỏa</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/xe-khach}"
+                       th:classappend="${#strings.startsWith(currentPath ?: '', '/xe-khach')} ? 'active bus' : ''">
+                        <i class="bi bi-bus-front me-1"></i>Vé xe khách</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/tu-van}"
+                       th:classappend="${#strings.startsWith(currentPath ?: '', '/tu-van')} ? 'active' : ''">
+                        <i class="bi bi-headset me-1"></i>Hẹn tư vấn</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/chinh-sach}"
+                       th:classappend="${#strings.startsWith(currentPath ?: '', '/chinh-sach')} ? 'active' : ''">
+                        <i class="bi bi-receipt me-1"></i>Giá & chính sách</a>
+                </li>
+            </ul>
+
+            <div class="d-flex align-items-center gap-2 mt-3 mt-lg-0" th:if="${currentUser == null}">
+                <a class="nav-link" th:href="@{/dang-nhap}">Đăng nhập</a>
+                <a class="btn btn-rail btn-sm px-3" th:href="@{/dang-ky}">Đăng ký</a>
+            </div>
+
+            <div class="d-flex align-items-center gap-2 mt-3 mt-lg-0" th:if="${currentUser != null}">
+                <a class="nav-link" th:href="@{/don-hang}"
+                   th:classappend="${#strings.startsWith(currentPath ?: '', '/don-hang')} ? 'active' : ''">
+                    <i class="bi bi-ticket-perforated me-1"></i>Vé của tôi</a>
+                <div class="dropdown">
+                    <button class="btn p-0 border-0 d-flex align-items-center gap-2" type="button"
+                            data-bs-toggle="dropdown" aria-expanded="false" aria-label="Tài khoản">
+                        <span class="avatar" th:text="${currentUser.initials}">NA</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li class="px-3 pt-2 pb-2">
+                            <div class="fw-bold" th:text="${currentUser.fullName}">Tên</div>
+                            <div class="small text-soft" th:text="${currentUser.email}">email</div>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li th:if="${currentUser.admin}"><a class="dropdown-item" th:href="@{/admin}"><i class="bi bi-speedometer2"></i>Trang quản trị</a></li>
+                        <li><a class="dropdown-item" th:href="@{/tai-khoan}"><i class="bi bi-person"></i>Tài khoản</a></li>
+                        <li><a class="dropdown-item" th:href="@{/don-hang}"><i class="bi bi-ticket-perforated"></i>Vé của tôi</a></li>
+                        <li><a class="dropdown-item" th:href="@{/tu-van}"><i class="bi bi-calendar2-check"></i>Lịch tư vấn</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form th:action="@{/dang-xuat}" method="post">
+                                <button class="dropdown-item text-danger" type="submit"><i class="bi bi-box-arrow-right text-danger"></i>Đăng xuất</button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- ============================ FLASH ============================ -->
+<div th:fragment="flash" class="toast-stack" aria-live="polite">
+    <div class="toast-x success" role="status" th:if="${success != null}">
+        <i class="bi bi-check-circle-fill"></i>
+        <div th:text="${success}">OK</div>
+        <button type="button" aria-label="Đóng"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="toast-x error" role="alert" th:if="${error != null}">
+        <i class="bi bi-exclamation-octagon-fill"></i>
+        <div th:text="${error}">Lỗi</div>
+        <button type="button" aria-label="Đóng"><i class="bi bi-x-lg"></i></button>
+    </div>
+</div>
+
+<!-- ============================ BOOKING STEPS ============================ -->
+<ol th:fragment="steps(step)" class="steps" aria-label="Các bước đặt vé">
+    <li th:classappend="${step > 1} ? 'done' : (${step == 1} ? 'current' : '')"><span>Chọn chuyến</span></li>
+    <li th:classappend="${step > 2} ? 'done' : (${step == 2} ? 'current' : '')"><span>Chọn chỗ</span></li>
+    <li th:classappend="${step > 3} ? 'done' : (${step == 3} ? 'current' : '')"><span>Hành khách</span></li>
+    <li th:classappend="${step > 4} ? 'done' : (${step == 4} ? 'current' : '')"><span>Xác nhận & giữ chỗ</span></li>
+</ol>
+
+<!-- ============================ FOOTER ============================ -->
+<footer th:fragment="footer" class="site-foot">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <a class="brand mb-3" th:href="@{/}"><span class="brand-mark"><i class="bi bi-signpost-split-fill"></i></span>VietGo</a>
+                <p class="mt-3 mb-0" style="max-width: 34ch">Đặt vé tàu hỏa và xe khách khắp Việt Nam: chọn chỗ trên sơ đồ, giữ chỗ miễn phí, thanh toán trong vài phút.</p>
+            </div>
+            <div class="col-6 col-lg-2">
+                <h6>Đặt vé</h6>
+                <a th:href="@{/tau-hoa}">Vé tàu hỏa</a>
+                <a th:href="@{/xe-khach}">Vé xe khách</a>
+                <a th:href="@{/don-hang}">Tra cứu vé của tôi</a>
+            </div>
+            <div class="col-6 col-lg-3">
+                <h6>Hỗ trợ</h6>
+                <a th:href="@{/tu-van}">Đặt lịch hẹn tư vấn</a>
+                <a th:href="@{/chinh-sach}">Bảng giá & chính sách hoàn hủy</a>
+                <a href="/chinh-sach#hoan-huy">Quy định đổi, hủy vé</a>
+            </div>
+            <div class="col-lg-3">
+                <h6>Liên hệ</h6>
+                <div><i class="bi bi-telephone me-2"></i>1900 6868 (7:00 – 22:00)</div>
+                <div><i class="bi bi-envelope me-2"></i>hotro@vietgo.vn</div>
+                <div><i class="bi bi-geo-alt me-2"></i>12 Nguyễn Văn Bảo, Gò Vấp, TP.HCM</div>
+            </div>
+        </div>
+        <div class="bottom d-flex flex-wrap justify-content-between gap-2">
+            <span>© 2026 VietGo · Đề 5 – Quản lý đặt vé du lịch (Vé tàu hỏa & Vé xe khách)</span>
+            <span>Spring Boot · Spring Web MVC · SQL Server</span>
+        </div>
+    </div>
+</footer>
+
+<!-- ============================ SCRIPTS ============================ -->
+<th:block th:fragment="scripts">
+    <script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>
+    <script th:src="@{/js/app.js}"></script>
+</th:block>
+
+</body>
+</html>

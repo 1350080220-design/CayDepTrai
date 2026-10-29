@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${form.id == null} ? 'Thêm chuyến xe' : 'Sửa chuyến xe')}"></head>
+<body class="no-foot-gap">
+<nav th:replace="~{fragments/layout :: nav(false)}"></nav>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<div class="admin-shell">
+    <aside th:replace="~{admin/_side :: side(${section})}"></aside>
+    <main class="admin-main" data-kind="bus">
+        <div class="crumbs"><a th:href="@{/admin/xe-khach}">Chuyến xe</a> / <th:block th:text="${form.id == null} ? 'Thêm mới' : 'Sửa #' + ${form.id}">Thêm</th:block></div>
+        <h1 class="h3 mb-3" th:text="${form.id == null} ? 'Thêm chuyến xe' : 'Sửa chuyến xe #' + ${form.id}">Thêm chuyến xe</h1>
+
+        <form class="panel panel-pad" style="max-width:860px" th:action="@{/admin/xe-khach/luu}" th:object="${form}" method="post" data-loading novalidate>
+            <input type="hidden" th:field="*{id}">
+            <div class="alert-x error mb-3" th:if="${#fields.hasGlobalErrors()}">
+                <i class="bi bi-exclamation-triangle"></i><div><div th:each="e : ${#fields.globalErrors()}" th:text="${e}">lỗi</div></div>
+            </div>
+            <div class="alert-x warn mb-3" th:if="${locked}">
+                <i class="bi bi-lock"></i><div>Chuyến đã có khách đặt: không thể đổi loại xe hoặc nơi đi / nơi đến.</div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label" for="operatorName">Nhà xe</label>
+                    <input class="form-control" th:field="*{operatorName}" maxlength="80" th:errorclass="is-invalid">
+                    <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('operatorName')}" th:errors="*{operatorName}"></div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="licensePlate">Biển số</label>
+                    <input class="form-control text-uppercase" th:field="*{licensePlate}" maxlength="12" placeholder="51B-123.45" th:errorclass="is-invalid">
+                    <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('licensePlate')}" th:errors="*{licensePlate}"></div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="basePrice">Giá vé gốc (đ)</label>
+                    <input class="form-control" type="number" th:field="*{basePrice}" min="50000" step="1000" th:errorclass="is-invalid">
+                    <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('basePrice')}" th:errors="*{basePrice}"></div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="originCity">Nơi đi</label>
+                    <select class="form-select" th:field="*{originCity}" th:errorclass="is-invalid">
+                        <option value="">— Chọn —</option>
+                        <option th:each="c : ${cities}" th:value="${c}" th:text="${c}">tp</option>
+                    </select>
+                    <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('originCity')}" th:errors="*{originCity}"></div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="destinationCity">Nơi đến</label>
+                    <select class="form-select" th:field="*{destinationCity}" th:errorclass="is-invalid">
+                        <option value="">— Chọn —</option>
+                        <option th:each="c : ${cities}" th:value="${c}" th:text="${c}">tp</option>
+                    </select>
+                    <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('destinationCity')}" th:errors="*{destinationCity}"></div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="busType">Loại xe</label>
+                    <select class="form-select" th:field="*{busType}" th:errorclass="is-invalid">
+                        <option th:each="bt : ${busTypes}" th:value="${bt}" th:text="${bt.label}">loại</option>
+                    </select>
+                    <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('busType')}" th:errors="*{busType}"></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="departureTime">Giờ xuất bến</label>
+                    <input class="form-control" type="datetime-local" th:field="*{departureTime}" th:errorclass="is-invalid">
+                    <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('departureTime')}" th:errors="*{departureTime}"></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="arrivalTime">Giờ đến dự kiến</label>
+                    <input class="form-control" type="datetime-local" th:field="*{arrivalTime}" th:errorclass="is-invalid">
+                    <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('arrivalTime')}" th:errors="*{arrivalTime}"></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="pickupPoints">Điểm đón <span class="text-soft fw-normal">(mỗi dòng một điểm)</span></label>
+                    <textarea class="form-control" th:field="*{pickupPoints}" rows="4" th:errorclass="is-invalid"></textarea>
+                    <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('pickupPoints')}" th:errors="*{pickupPoints}"></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="dropoffPoints">Điểm trả <span class="text-soft fw-normal">(mỗi dòng một điểm)</span></label>
+                    <textarea class="form-control" th:field="*{dropoffPoints}" rows="4" th:errorclass="is-invalid"></textarea>
+                    <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('dropoffPoints')}" th:errors="*{dropoffPoints}"></div>
+                </div>
+            </div>
+
+            <div class="form-check form-switch mt-4">
+                <input class="form-check-input" type="checkbox" role="switch" th:field="*{active}">
+                <label class="form-check-label" th:for="${#ids.prev('active')}">Mở bán vé</label>
+            </div>
+
+            <div class="d-flex gap-2 mt-4">
+                <button class="btn btn-coach" type="submit"><i class="bi bi-check-lg me-1"></i>Lưu chuyến xe</button>
+                <a class="btn btn-ghost" th:href="@{/admin/xe-khach}">Hủy</a>
+            </div>
+        </form>
+    </main>
+</div>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

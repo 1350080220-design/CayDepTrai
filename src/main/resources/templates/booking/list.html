@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Vé của tôi')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: nav(false)}"></nav>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<main>
+    <div class="container">
+        <div class="page-head d-flex justify-content-between align-items-end flex-wrap gap-3">
+            <div>
+                <h1>Vé của tôi</h1>
+                <p class="text-soft mb-0">
+                    <th:block th:text="${allCount}">0</th:block> đơn ·
+                    <th:block th:text="${paidCount}">0</th:block> đã thanh toán ·
+                    <th:block th:text="${heldCount}">0</th:block> đang giữ chỗ
+                </p>
+            </div>
+            <div class="d-flex gap-2">
+                <a class="btn btn-rail" th:href="@{/tau-hoa}"><i class="bi bi-train-front me-1"></i>Đặt vé tàu</a>
+                <a class="btn btn-coach" th:href="@{/xe-khach}"><i class="bi bi-bus-front me-1"></i>Đặt vé xe</a>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between flex-wrap gap-2 my-3">
+            <div class="filter-tabs">
+                <a th:href="@{/don-hang(type=${type})}" th:classappend="${status == null} ? 'active' : ''">Tất cả</a>
+                <a th:each="s : ${statuses}" th:href="@{/don-hang(status=${s},type=${type})}"
+                   th:classappend="${status == s} ? 'active' : ''" th:text="${s.label}">Trạng thái</a>
+            </div>
+            <div class="filter-tabs">
+                <a th:href="@{/don-hang(status=${status})}" th:classappend="${type == null} ? 'active' : ''">Mọi loại vé</a>
+                <a th:href="@{/don-hang(status=${status},type='TRAIN')}" th:classappend="${type != null and type.name() == 'TRAIN'} ? 'active' : ''"><i class="bi bi-train-front me-1"></i>Tàu hỏa</a>
+                <a th:href="@{/don-hang(status=${status},type='BUS')}" th:classappend="${type != null and type.name() == 'BUS'} ? 'active' : ''"><i class="bi bi-bus-front me-1"></i>Xe khách</a>
+            </div>
+        </div>
+
+        <div class="panel">
+            <a class="booking-row" th:each="b : ${bookings}" th:href="@{/don-hang/{c}(c=${b.code})}"
+               th:attr="data-kind=${b.train} ? 'train' : 'bus'">
+                <span class="ico"><i class="bi" th:classappend="${b.ticketType.icon} + '-fill'"></i></span>
+                <div class="min-w-0">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="code" th:text="${b.code}">TH123</span>
+                        <span class="status" th:classappend="'status-' + ${b.status.css}" th:text="${b.status.label}">Trạng thái</span>
+                    </div>
+                    <div class="fw-semibold mt-1">
+                        <span th:text="${b.origin}">A</span> <i class="bi bi-arrow-right text-soft mx-1"></i> <span th:text="${b.destination}">B</span>
+                    </div>
+                    <div class="small text-soft" th:text="${b.vehicleName} + ' · ' + ${@fmt.time(b.departureTime)} + ' ' + ${@fmt.weekday(b.departureTime)}  + ', ' + ${@fmt.date(b.departureTime)} + ' · ' + ${b.passengerCount} + ' khách'">chi tiết</div>
+                </div>
+                <div class="end text-end">
+                    <div class="fw-bold num fs-5" th:text="${@fmt.money(b.totalAmount)}">0đ</div>
+                    <div class="small text-soft" th:if="${b.held}"><i class="bi bi-hourglass-split me-1"></i>Chờ thanh toán</div>
+                    <div class="small text-soft" th:if="${b.refundAmount > 0}" th:text="'Đã hoàn ' + ${@fmt.money(b.refundAmount)}">Hoàn</div>
+                </div>
+            </a>
+            <div class="empty-state" th:if="${#lists.isEmpty(bookings)}">
+                <i class="bi bi-ticket-perforated ill"></i>
+                <h3 class="h5">Chưa có đơn nào ở mục này</h3>
+                <p class="text-soft">Tìm một chuyến tàu hoặc chuyến xe để bắt đầu hành trình.</p>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

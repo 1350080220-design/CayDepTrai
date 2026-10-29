@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Chọn ghế xe ' + ${trip.operatorName})}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: nav(false)}"></nav>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<main data-kind="bus">
+    <div class="container">
+        <div class="page-head">
+            <div class="crumbs">
+                <a th:href="@{/}">Trang chủ</a> /
+                <a th:href="@{/xe-khach(from=${trip.originCity},to=${trip.destinationCity},date=${trip.departureTime.toLocalDate()})}">Vé xe khách</a> /
+                Chọn ghế
+            </div>
+            <ol th:replace="~{fragments/layout :: steps(2)}"></ol>
+        </div>
+
+        <div class="panel panel-pad mb-4">
+            <div class="row g-3 align-items-center">
+                <div class="col-lg-7">
+                    <div class="big-od mb-0">
+                        <div>
+                            <div class="t" th:text="${@fmt.time(trip.departureTime)}">07:00</div>
+                            <div class="p" th:text="${trip.originCity}">TP.HCM</div>
+                            <div class="d" th:text="${@fmt.weekday(trip.departureTime)} + ', ' + ${@fmt.date(trip.departureTime)}">ngày</div>
+                        </div>
+                        <div class="text-center">
+                            <i class="bi bi-bus-front-fill arrow"></i>
+                            <div class="small text-soft" th:text="${trip.durationText}">giờ</div>
+                        </div>
+                        <div class="right">
+                            <div class="t" th:text="${@fmt.time(trip.arrivalTime)}">14:00</div>
+                            <div class="p" th:text="${trip.destinationCity}">Đà Lạt</div>
+                            <div class="d" th:text="${@fmt.date(trip.arrivalTime)}">ngày</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-5">
+                    <div class="d-flex flex-wrap gap-2 justify-content-lg-end">
+                        <span class="pill"><i class="bi bi-building"></i><th:block th:text="${trip.operatorName}">Nhà xe</th:block></span>
+                        <span class="pill pill-bus"><i class="bi" th:classappend="${trip.busType.icon}"></i><th:block th:text="${trip.busType.label}">Loại</th:block></span>
+                        <span class="pill"><i class="bi bi-card-text"></i><th:block th:text="${trip.licensePlate}">Biển số</th:block></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert-x warn mb-4" th:if="${!open}">
+            <i class="bi bi-clock-history"></i><div th:text="${closedReason}">Đã đóng bán</div>
+        </div>
+
+        <div class="row g-4" data-seatmap th:attr="data-max=${maxSeats}" data-unit="ghế">
+            <div class="col-lg-8">
+                <div class="panel panel-pad mb-4">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                        <h2 class="h6 mb-0"><i class="bi bi-graph-up-arrow me-2"></i>Giá động theo tỷ lệ lấp đầy</h2>
+                        <span class="small fw-semibold num" th:text="${occupancy} + '% đã đặt'">0%</span>
+                    </div>
+                    <div class="occ-gauge">
+                        <div class="bar">
+                            <span th:style="'width:' + ${occupancy} + '%'"></span>
+                            <i class="tick" style="left:50%"></i>
+                            <i class="tick" style="left:80%"></i>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between small text-soft mt-2">
+                        <span>Dưới 50%: giá gốc</span><span>50–79%: +5%</span><span>Từ 80%: +10%</span>
+                    </div>
+                </div>
+
+                <div class="panel panel-pad">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                        <h2 class="h5 mb-0">Sơ đồ ghế</h2>
+                        <div class="legend">
+                            <span><i class="sw"></i>Còn trống</span>
+                            <span><i class="sw sel"></i>Đang chọn</span>
+                            <span><i class="sw tk"></i>Đã đặt</span>
+                        </div>
+                    </div>
+
+                    <div class="deck-wrap"
+                         th:with="seatCls=${trip.busType.name() == 'SLEEPER_36' ? 'sleeper' : (trip.busType.name() == 'LIMOUSINE_9' ? 'limo' : '')}">
+                        <div class="bus-shell" th:each="deck, ds : ${decks}">
+                            <div class="front">
+                                <span th:text="${deck.name}">Tầng dưới</span>
+                                <span th:if="${ds.first}" class="wheel" aria-hidden="true"></span>
+                                <span th:unless="${ds.first}"><i class="bi bi-arrow-up"></i> đầu xe</span>
+                            </div>
+                            <div class="bus-row" th:each="row : ${deck.rows}">
+                                <th:block th:each="s : ${row}">
+                                    <span class="gap" th:if="${s == null}"></span>
+                                    <button type="button" th:if="${s != null}"
+                                            th:class="'seat ' + ${seatCls} + (${s.taken} ? ' taken' : '')"
+                                            th:disabled="${s.taken or !open}"
+                                            th:attr="data-key=${s.key},data-label=${s.label},data-price=${s.price},aria-label=${s.label} + (${s.taken} ? ' – đã đặt' : '')"
+                                            aria-pressed="false" th:text="${s.key}">A01</button>
+                                </th:block>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="small text-soft mt-3 mb-0 text-center">
+                        <th:block th:if="${trip.busType.name() == 'SLEEPER_36'}">Giường tầng dưới (A) cao hơn 10% so với tầng trên (B).</th:block>
+                        <th:block th:if="${trip.busType.name() == 'LIMOUSINE_9'}">Hàng ghế VIP đầu xe (L1, L2) cao hơn 15%.</th:block>
+                        <th:block th:if="${trip.busType.name() == 'SEAT_45'}">Ghế A01 gần cửa lên xuống, hàng cuối 5 ghế liền nhau.</th:block>
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="panel sticky-side">
+                    <div class="panel-head">
+                        <h3 class="h6">Ghế đã chọn</h3>
+                        <span class="pill pill-bus num" id="picked-count">0/8</span>
+                    </div>
+                    <div class="panel-pad pt-2">
+                        <p class="small text-soft my-3" id="picked-empty">Chọn ghế còn trống trên sơ đồ. Tối đa
+                            <th:block th:text="${maxSeats}">8</th:block> ghế mỗi đơn.</p>
+                        <ul class="picked-list" id="picked-list"></ul>
+                        <div class="total-row">
+                            <span class="fw-semibold">Tạm tính</span>
+                            <span class="amount num" id="picked-total" data-v="0">0đ</span>
+                        </div>
+                        <p class="small text-soft mt-2 mb-3">Giá người lớn theo tỷ lệ lấp đầy hiện tại. Phí hành lý, đón tận nơi và ưu đãi nhóm tính ở bước sau.</p>
+
+                        <form id="seat-form" th:action="@{/xe-khach/dat-ve/chon-ghe}" method="post" th:if="${open and currentUser != null}">
+                            <input type="hidden" name="tripId" th:value="${trip.id}">
+                            <div id="seat-inputs"></div>
+                            <button class="btn btn-coach btn-lg w-100" type="submit" id="seat-submit" disabled>
+                                Tiếp tục <i class="bi bi-arrow-right ms-1"></i>
+                            </button>
+                        </form>
+                        <div th:if="${open and currentUser == null}">
+                            <div id="seat-inputs" hidden></div>
+                            <a class="btn btn-ink btn-lg w-100" th:href="@{/dang-nhap(redirect=${'/xe-khach/chuyen/' + trip.id})}">
+                                <i class="bi bi-box-arrow-in-right me-1"></i>Đăng nhập để đặt vé
+                            </a>
+                        </div>
+                        <div th:if="${!open}">
+                            <div id="seat-inputs" hidden></div>
+                            <a class="btn btn-ghost w-100" th:href="@{/xe-khach}">Tìm chuyến khác</a>
+                        </div>
+
+                        <hr>
+                        <div class="small">
+                            <div class="fw-semibold mb-1"><i class="bi bi-geo-alt me-1"></i>Điểm đón</div>
+                            <div class="text-soft" th:each="p : ${trip.pickupPointList}" th:text="'• ' + ${p}">điểm</div>
+                            <div class="fw-semibold mt-2 mb-1"><i class="bi bi-geo-alt-fill me-1"></i>Điểm trả</div>
+                            <div class="text-soft" th:each="p : ${trip.dropoffPointList}" th:text="'• ' + ${p}">điểm</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+<script th:src="@{/js/seatmap.js}"></script>
+</body>
+</html>

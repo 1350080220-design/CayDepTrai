@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Không tìm thấy trang')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: nav(false)}"></nav>
+<main>
+    <div class="container err-wrap">
+        <div class="err-code">404</div>
+        <h1 class="h3 mt-3">Không tìm thấy trang</h1>
+        <p class="text-soft mx-auto" style="max-width:52ch">Trang hoặc đơn đặt vé bạn tìm không tồn tại, hoặc bạn không có quyền xem.</p>
+        <div class="d-flex gap-2 justify-content-center flex-wrap mt-4">
+            <a class="btn btn-rail" th:href="@{/}"><i class="bi bi-house me-1"></i>Về trang chủ</a>
+            <a class="btn btn-ghost" href="javascript:history.back()"><i class="bi bi-arrow-left me-1"></i>Quay lại</a>
+        </div>
+    </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

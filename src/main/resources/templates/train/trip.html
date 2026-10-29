@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Chọn chỗ tàu ' + ${trip.trainCode})}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: nav(false)}"></nav>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<main data-kind="train">
+    <div class="container">
+        <div class="page-head">
+            <div class="crumbs">
+                <a th:href="@{/}">Trang chủ</a> /
+                <a th:href="@{/tau-hoa(from=${trip.originStation},to=${trip.destinationStation},date=${trip.departureTime.toLocalDate()})}">Vé tàu hỏa</a> /
+                Chọn chỗ
+            </div>
+            <ol th:replace="~{fragments/layout :: steps(2)}"></ol>
+        </div>
+
+        <div class="panel panel-pad mb-4">
+            <div class="row g-3 align-items-center">
+                <div class="col-lg-7">
+                    <div class="big-od mb-0">
+                        <div>
+                            <div class="t" th:text="${@fmt.time(trip.departureTime)}">19:25</div>
+                            <div class="p" th:text="${trip.originStation}">Hà Nội</div>
+                            <div class="d" th:text="${@fmt.weekday(trip.departureTime)} + ', ' + ${@fmt.date(trip.departureTime)}">ngày</div>
+                        </div>
+                        <div class="text-center">
+                            <i class="bi bi-train-front-fill arrow"></i>
+                            <div class="small text-soft" th:text="${trip.durationText}">giờ</div>
+                        </div>
+                        <div class="right">
+                            <div class="t" th:text="${@fmt.time(trip.arrivalTime)}">10:30</div>
+                            <div class="p" th:text="${trip.destinationStation}">Đà Nẵng</div>
+                            <div class="d" th:text="${@fmt.weekday(trip.arrivalTime)} + ', ' + ${@fmt.date(trip.arrivalTime)}">ngày</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-5">
+                    <div class="d-flex flex-wrap gap-2 justify-content-lg-end">
+                        <span class="pill pill-train"><i class="bi bi-train-front"></i><th:block th:text="'Tàu ' + ${trip.trainCode}">SE1</th:block></span>
+                        <span class="pill"><i class="bi bi-signpost"></i><th:block th:text="${trip.distanceKm} + ' km'">km</th:block></span>
+                        <span class="pill"><i class="bi bi-hourglass-split"></i><th:block th:text="'Giữ chỗ ' + ${holdMinutes} + ' phút'">giữ</th:block></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert-x warn mb-4" th:if="${!open}">
+            <i class="bi bi-clock-history"></i><div th:text="${closedReason}">Đã đóng bán</div>
+        </div>
+
+        <div class="row g-4" data-seatmap th:attr="data-max=${maxSeats}" data-unit="chỗ">
+            <div class="col-lg-8">
+                <div class="panel panel-pad">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                        <h2 class="h5 mb-0">Sơ đồ đoàn tàu</h2>
+                        <div class="legend">
+                            <span><i class="sw"></i>Còn trống</span>
+                            <span><i class="sw sel"></i>Đang chọn</span>
+                            <span><i class="sw tk"></i>Đã đặt</span>
+                        </div>
+                    </div>
+
+                    <div class="train-strip" aria-hidden="true">
+                        <span class="loco"></span>
+                        <button type="button" class="car" th:each="c, cs : ${coaches}" th:classappend="${cs.first} ? 'active' : ''"
+                                th:attr="data-coach=${c.coachNo}" th:text="${c.coachNo}" tabindex="-1">1</button>
+                    </div>
+
+                    <div class="coach-tabs" role="tablist" aria-label="Chọn toa">
+                        <button type="button" class="coach-tab" role="tab" th:each="c, cs : ${coaches}"
+                                th:classappend="${cs.first} ? 'active' : ''" th:attr="data-coach-tab=${c.coachNo},aria-selected=${cs.first}">
+                            <span class="badge-sel">0</span>
+                            <span class="no" th:text="'Toa ' + ${c.coachNo}">Toa 1</span>
+                            <span class="ty" th:text="${c.type.label}">Ngồi mềm</span>
+                            <span class="left" th:text="'Còn ' + ${c.available} + ' chỗ · từ ' + ${@fmt.money(c.minPrice)}">còn</span>
+                        </button>
+                    </div>
+
+                    <div class="coach-pane" th:each="c, cs : ${coaches}" th:classappend="${cs.first} ? 'show' : ''"
+                         th:attr="data-coach-pane=${c.coachNo}" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2 small">
+                            <span><i class="bi me-1" th:classappend="${c.type.icon}"></i><strong th:text="'Toa ' + ${c.coachNo} + ' · ' + ${c.type.label}">Toa</strong></span>
+                            <span class="text-soft" th:if="${c.sleeper}">Tầng 1 (dưới) đắt hơn · tầng trên rẻ hơn</span>
+                            <span class="text-soft" th:unless="${c.sleeper}">Đầu toa ← → Cuối toa</span>
+                        </div>
+                        <div class="car-shell">
+                            <!-- Toa ghe ngoi: 4 hang, loi di o giua -->
+                            <div class="seat-grid" th:unless="${c.sleeper}">
+                                <th:block th:each="row, rs : ${c.rows}">
+                                    <div class="aisle-gap" th:if="${rs.index == 2}">lối đi</div>
+                                    <div class="seat-row">
+                                        <button type="button" class="seat" th:each="s : ${row}"
+                                                th:classappend="${s.taken} ? 'taken' : ''"
+                                                th:disabled="${s.taken or !open}"
+                                                th:attr="data-key=${s.key},data-label=${s.label},data-price=${s.price},data-coach=${c.coachNo},aria-label=${s.label} + (${s.taken} ? ' – đã đặt' : '')"
+                                                aria-pressed="false" th:text="${s.number}">1</button>
+                                    </div>
+                                </th:block>
+                            </div>
+
+                            <!-- Toa giuong nam: tung khoang, tang tren o tren -->
+                            <div class="compartments" th:if="${c.sleeper}">
+                                <div class="compartment" th:each="comp, ks : ${c.compartments}">
+                                    <div class="cap" th:text="'Khoang ' + ${ks.count}">Khoang 1</div>
+                                    <div class="tier" th:each="tier : ${comp}">
+                                        <span class="tier-label" th:text="'T' + ${tier[0].tier}">T1</span>
+                                        <button type="button" class="seat berth" th:each="s : ${tier}"
+                                                th:classappend="${s.taken} ? 'taken' : ''"
+                                                th:disabled="${s.taken or !open}"
+                                                th:attr="data-key=${s.key},data-label=${s.label},data-price=${s.price},data-coach=${c.coachNo},aria-label=${s.label} + (${s.taken} ? ' – đã đặt' : '')"
+                                                aria-pressed="false" th:text="${s.number}">1</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel panel-pad mt-4" th:if="${open}">
+                    <h3 class="h6 mb-1"><i class="bi bi-magic me-2 text-success"></i>Gợi ý chỗ ngồi gần nhau</h3>
+                    <p class="small text-soft mb-3">Hệ thống tìm nhóm chỗ trống gần nhau nhất; với toa giường sẽ ưu tiên xếp chung một khoang.</p>
+                    <div class="row g-2 align-items-end">
+                        <div class="col-sm-5">
+                            <label class="form-label" for="suggest-type">Hạng toa</label>
+                            <select class="form-select" id="suggest-type">
+                                <option value="">Bất kỳ</option>
+                                <option th:each="ct : ${coachTypes}" th:if="${trip.hasCoachType(ct.name())}"
+                                        th:value="${ct.name()}" th:text="${ct.label}">Ngồi mềm</option>
+                            </select>
+                        </div>
+                        <div class="col-sm-3">
+                            <label class="form-label" for="suggest-n">Số khách</label>
+                            <select class="form-select" id="suggest-n">
+                                <option th:each="i : ${#numbers.sequence(1, maxSeats)}" th:value="${i}" th:text="${i}" th:selected="${i == 2}">1</option>
+                            </select>
+                        </div>
+                        <div class="col-sm-4 d-grid">
+                            <button type="button" class="btn btn-ink" id="suggest-btn"
+                                    th:attr="data-url=@{/tau-hoa/chuyen/{id}/goi-y(id=${trip.id})}">
+                                <i class="bi bi-stars me-1"></i>Tự chọn chỗ
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="panel sticky-side">
+                    <div class="panel-head">
+                        <h3 class="h6">Chỗ đã chọn</h3>
+                        <span class="pill pill-train num" id="picked-count">0/6</span>
+                    </div>
+                    <div class="panel-pad pt-2">
+                        <p class="small text-soft my-3" id="picked-empty">Bấm vào ghế hoặc giường còn trống trên sơ đồ để chọn. Tối đa
+                            <th:block th:text="${maxSeats}">6</th:block> chỗ mỗi lần đặt.</p>
+                        <ul class="picked-list" id="picked-list"></ul>
+                        <div class="total-row">
+                            <span class="fw-semibold">Tạm tính</span>
+                            <span class="amount num" id="picked-total" data-v="0">0đ</span>
+                        </div>
+                        <p class="small text-soft mt-2 mb-3">Giá người lớn, đã gồm phụ phí ngày chạy. Ưu đãi đối tượng được áp dụng ở bước sau.</p>
+
+                        <form id="seat-form" th:action="@{/tau-hoa/dat-ve/chon-ghe}" method="post" th:if="${open and currentUser != null}">
+                            <input type="hidden" name="tripId" th:value="${trip.id}">
+                            <div id="seat-inputs"></div>
+                            <button class="btn btn-rail btn-lg w-100" type="submit" id="seat-submit" disabled>
+                                Tiếp tục <i class="bi bi-arrow-right ms-1"></i>
+                            </button>
+                        </form>
+                        <div th:if="${open and currentUser == null}">
+                            <div id="seat-inputs" hidden></div>
+                            <a class="btn btn-ink btn-lg w-100" th:href="@{/dang-nhap(redirect=${'/tau-hoa/chuyen/' + trip.id})}">
+                                <i class="bi bi-box-arrow-in-right me-1"></i>Đăng nhập để đặt vé
+                            </a>
+                        </div>
+                        <div th:if="${!open}">
+                            <div id="seat-inputs" hidden></div>
+                            <a class="btn btn-ghost w-100" th:href="@{/tau-hoa}">Tìm chuyến khác</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+<script th:src="@{/js/seatmap.js}"></script>
+</body>
+</html>

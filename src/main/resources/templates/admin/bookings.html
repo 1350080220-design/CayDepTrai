@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Quản trị · Đơn đặt vé')}"></head>
+<body class="no-foot-gap">
+<nav th:replace="~{fragments/layout :: nav(false)}"></nav>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<div class="admin-shell">
+    <aside th:replace="~{admin/_side :: side(${section})}"></aside>
+    <main class="admin-main">
+        <h1 class="h3 mb-3">Đơn đặt vé</h1>
+
+        <form class="panel panel-pad mb-3" th:action="@{/admin/don-hang}" method="get">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label" for="q">Tìm kiếm</label>
+                    <div class="input-icon"><i class="bi bi-search"></i>
+                        <input class="form-control" id="q" name="q" th:value="${q}" placeholder="Mã đơn, tên hoặc số điện thoại">
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label" for="type">Loại vé</label>
+                    <select class="form-select" id="type" name="type">
+                        <option value="">Tất cả</option>
+                        <option value="TRAIN" th:selected="${type != null and type.name() == 'TRAIN'}">Vé tàu hỏa</option>
+                        <option value="BUS" th:selected="${type != null and type.name() == 'BUS'}">Vé xe khách</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label" for="status">Trạng thái</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">Tất cả</option>
+                        <option th:each="s : ${statuses}" th:value="${s}" th:text="${s.label}" th:selected="${s == status}">tt</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-grid"><button class="btn btn-ink" type="submit">Lọc</button></div>
+            </div>
+        </form>
+
+        <div class="panel">
+            <div class="panel-head"><span class="small text-soft" th:text="${#lists.size(bookings)} + ' đơn'">0 đơn</span></div>
+            <div class="table-wrap">
+                <table class="table-x">
+                    <thead><tr><th>Mã</th><th>Loại</th><th>Hành trình</th><th>Khởi hành</th><th>Liên hệ</th><th>Trạng thái</th><th class="r">Tổng</th><th class="r">Hoàn</th><th></th></tr></thead>
+                    <tbody>
+                    <tr th:each="b : ${bookings}">
+                        <td><a class="fw-bold num" th:href="@{/don-hang/{c}(c=${b.code})}" th:text="${b.code}">code</a>
+                            <div class="small text-soft" th:text="${@fmt.dateTime(b.createdAt)}">tạo</div></td>
+                        <td><span class="pill" th:classappend="${b.train} ? 'pill-train' : 'pill-bus'" th:text="${b.train} ? 'Tàu' : 'Xe'">Tàu</span></td>
+                        <td class="small"><div th:text="${b.origin} + ' → ' + ${b.destination}">A → B</div><div class="text-soft" th:text="${b.vehicleName} + ' · ' + ${b.passengerCount} + ' khách'">v</div></td>
+                        <td class="small" th:text="${@fmt.dateTime(b.departureTime)}">t</td>
+                        <td class="small"><div th:text="${b.contactName}">Tên</div><div class="text-soft" th:text="${b.contactPhone}">SĐT</div></td>
+                        <td><span class="status" th:classappend="'status-' + ${b.status.css}" th:text="${b.status.label}">tt</span></td>
+                        <td class="r fw-semibold" th:text="${@fmt.money(b.totalAmount)}">0đ</td>
+                        <td class="r small" th:text="${b.refundAmount > 0} ? ${@fmt.money(b.refundAmount)} : '—'">—</td>
+                        <td class="r">
+                            <form th:if="${b.held or b.paid}" th:action="@{/admin/don-hang/{c}/huy(c=${b.code})}" method="post"
+                                  th:attr="data-confirm='Hủy đơn ' + ${b.code} + (${b.paid} ? ' và hoàn 100% cho khách?' : '?')" data-loading>
+                                <input type="hidden" name="reason" value="Nhà vận hành hủy đơn – hoàn 100%">
+                                <button class="btn btn-danger-soft btn-sm" type="submit">Hủy</button>
+                            </form>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(bookings)}"><td colspan="9" class="text-center text-soft py-4">Không có đơn phù hợp.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

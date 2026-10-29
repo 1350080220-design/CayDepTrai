@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Quản trị · Người dùng')}"></head>
+<body class="no-foot-gap">
+<nav th:replace="~{fragments/layout :: nav(false)}"></nav>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<div class="admin-shell">
+    <aside th:replace="~{admin/_side :: side(${section})}"></aside>
+    <main class="admin-main">
+        <h1 class="h3 mb-3">Người dùng</h1>
+        <div class="panel">
+            <div class="table-wrap">
+                <table class="table-x">
+                    <thead><tr><th>Người dùng</th><th>Điện thoại</th><th>Vai trò</th><th>Ngày tạo</th><th>Trạng thái</th><th></th></tr></thead>
+                    <tbody>
+                    <tr th:each="u : ${users}">
+                        <td><div class="d-flex align-items-center gap-2">
+                            <span class="avatar" th:text="${u.initials}">NA</span>
+                            <div><div class="fw-semibold" th:text="${u.fullName}">Tên</div><div class="small text-soft" th:text="${u.email}">email</div></div>
+                        </div></td>
+                        <td class="small" th:text="${u.phone}">SĐT</td>
+                        <td><span class="pill" th:classappend="${u.admin} ? 'pill-bus' : ''" th:text="${u.role.label}">vai trò</span></td>
+                        <td class="small" th:text="${@fmt.date(u.createdAt)}">ngày</td>
+                        <td><span class="status" th:classappend="${u.enabled} ? 'status-paid' : 'status-cancelled'" th:text="${u.enabled} ? 'Hoạt động' : 'Đã khóa'">tt</span></td>
+                        <td class="r">
+                            <form th:if="${u.id != currentUser.id}" th:action="@{/admin/nguoi-dung/{id}/khoa(id=${u.id})}" method="post"
+                                  th:attr="data-confirm=${u.enabled} ? 'Khóa tài khoản ' + ${u.email} + '?' : 'Mở khóa tài khoản ' + ${u.email} + '?'" data-loading>
+                                <button class="btn btn-sm" th:classappend="${u.enabled} ? 'btn-danger-soft' : 'btn-ghost'" type="submit"
+                                        th:text="${u.enabled} ? 'Khóa' : 'Mở khóa'">Khóa</button>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

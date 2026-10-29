@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Đơn ' + ${b.code})}"></head>
+<body th:attr="data-celebrate=${paid != null} ? 'true' : null">
+<nav th:replace="~{fragments/layout :: nav(false)}"></nav>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<main th:attr="data-kind=${b.train} ? 'train' : 'bus'">
+    <div class="container">
+        <div class="page-head">
+            <div class="crumbs">
+                <a th:href="@{/don-hang}" th:unless="${currentUser.admin and b.user.id != currentUser.id}">Vé của tôi</a>
+                <a th:href="@{/admin/don-hang}" th:if="${currentUser.admin and b.user.id != currentUser.id}">Quản trị · Đơn đặt vé</a>
+                / Đơn <th:block th:text="${b.code}">code</th:block>
+            </div>
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <h1 class="mb-0 num" th:text="${b.code}">TH123</h1>
+                <span class="status" th:classappend="'status-' + ${b.status.css}" th:text="${b.status.label}">Trạng thái</span>
+                <span class="pill" th:classappend="${b.train} ? 'pill-train' : 'pill-bus'">
+                    <i class="bi" th:classappend="${b.ticketType.icon}"></i><th:block th:text="${b.ticketType.label}">Loại</th:block>
+                </span>
+            </div>
+            <p class="text-soft mt-2 mb-0" th:text="'Tạo lúc ' + ${@fmt.dateTime(b.createdAt)}">Tạo lúc</p>
+        </div>
+
+        <div class="row g-4 mt-1">
+            <div class="col-lg-8">
+
+                <!-- ============ DANG GIU CHO: dem nguoc + thanh toan ============ -->
+                <th:block th:if="${b.held}">
+                    <div class="hold-box mb-4">
+                        <div class="ring" th:attr="data-countdown=${b.holdSecondsLeft},data-total=${b.train ? 900 : 600}">
+                            <svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="40"/><circle class="fg" cx="50" cy="50" r="40"/></svg>
+                            <span class="lbl">--:--</span>
+                        </div>
+                        <div>
+                            <h2 class="h5 mb-1">Chỗ của bạn đang được giữ</h2>
+                            <p class="mb-0">Hoàn tất thanh toán trước <strong th:text="${@fmt.time(b.holdExpiresAt)}">--:--</strong>.
+                                Sau thời gian này, chỗ sẽ tự động được trả lại cho khách khác.</p>
+                        </div>
+                    </div>
+
+                    <div class="panel panel-pad mb-4">
+                        <h2 class="h5 mb-1">Chọn phương thức thanh toán</h2>
+                        <p class="small text-soft mb-3">Cổng thanh toán mô phỏng phục vụ demo — không nhập và không lưu thông tin thẻ.</p>
+                        <form th:action="@{/don-hang/{c}/thanh-toan(c=${b.code})}" method="post" data-loading id="pay-form">
+                            <div class="pay-methods mb-4">
+                                <div class="pay-opt position-relative" th:each="m, ms : ${methods}">
+                                    <input type="radio" name="method" th:id="'m-' + ${m}" th:value="${m}" th:checked="${ms.first}" required>
+                                    <label th:for="'m-' + ${m}"><i class="bi" th:classappend="${m.icon}"></i><span th:text="${m.label}">Thẻ</span></label>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                                <div>
+                                    <div class="small text-soft">Số tiền thanh toán</div>
+                                    <div class="fs-3 fw-bold num" th:text="${@fmt.money(b.totalAmount)}">0đ</div>
+                                </div>
+                                <button class="btn btn-accent btn-lg px-4" type="submit"><i class="bi bi-shield-lock me-2"></i>Thanh toán ngay</button>
+                            </div>
+                        </form>
+                    </div>
+                </th:block>
+
+                <!-- ============ DA THANH TOAN: ve dien tu ============ -->
+                <th:block th:if="${b.paid}">
+                    <div class="eticket mb-4" th:classappend="${paid != null} ? 'printing' : ''">
+                        <div class="eticket-head">
+                            <div><div class="small opacity-75">Mã đặt chỗ</div><div class="code" th:text="${b.code}">CODE</div></div>
+                            <div class="text-end">
+                                <div class="small opacity-75">Thanh toán</div>
+                                <div class="fw-semibold" th:text="${@fmt.dateTime(b.paidAt)}">time</div>
+                            </div>
+                        </div>
+                        <div class="eticket-body">
+                            <div class="info">
+                                <div class="big-od">
+                                    <div><div class="t" th:text="${@fmt.time(b.departureTime)}">00:00</div><div class="p" th:text="${b.origin}">A</div><div class="d" th:text="${@fmt.date(b.departureTime)}">d</div></div>
+                                    <i class="bi bi-arrow-right arrow"></i>
+                                    <div class="right"><div class="t" th:text="${@fmt.time(b.arrivalTime)}">00:00</div><div class="p" th:text="${b.destination}">B</div><div class="d" th:text="${@fmt.date(b.arrivalTime)}">d</div></div>
+                                </div>
+                                <div class="kv"><span th:text="${b.train} ? 'Tàu' : 'Nhà xe'">Tàu</span><strong th:text="${b.train} ? ${b.trainTrip.trainCode} : ${b.busTrip.operatorName + ' · ' + b.busTrip.licensePlate}">SE1</strong></div>
+                                <div class="kv"><span>Chỗ</span><strong th:text="${#strings.listJoin(b.tickets.![seatKey], ', ')}">chỗ</strong></div>
+                                <div class="kv" th:if="${b.bus}"><span>Điểm đón</span><strong th:text="${b.pickupAddress != null} ? ${b.pickupPoint + ': ' + b.pickupAddress} : ${b.pickupPoint}">đón</strong></div>
+                                <div class="kv"><span>Phương thức</span><strong th:text="${b.paymentMethod.label}">PT</strong></div>
+                            </div>
+                            <div class="qr">
+                                <img th:src="${qr}" alt="Mã QR của vé" width="170" height="170">
+                                <div class="small text-soft mt-2" th:text="${b.train} ? 'Xuất trình khi lên tàu' : 'Xuất trình khi lên xe'">Xuất trình</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap mb-4">
+                        <a class="btn btn-ink" th:href="@{/don-hang/{c}/ve(c=${b.code})}" target="_blank" rel="noopener"><i class="bi bi-printer me-1"></i>In vé / Lưu PDF</a>
+                        <a class="btn btn-danger-soft" th:if="${refund.allowed}" th:href="@{/don-hang/{c}/huy(c=${b.code})}"><i class="bi bi-x-circle me-1"></i>Hủy vé</a>
+                        <span class="small text-soft align-self-center" th:unless="${refund.allowed}" th:text="${refund.message}">Không thể hủy</span>
+                    </div>
+                </th:block>
+
+                <!-- ============ DA HUY / HET HAN ============ -->
+                <div class="alert-x error mb-4" th:if="${b.status.name() == 'CANCELLED'}">
+                    <i class="bi bi-x-octagon"></i>
+                    <div>
+                        <div class="fw-semibold">Đơn đã hủy lúc <th:block th:text="${@fmt.dateTime(b.cancelledAt)}">t</th:block></div>
+                        <div th:if="${b.cancelReason != null}" th:text="'Lý do: ' + ${b.cancelReason}">lý do</div>
+                        <div th:if="${b.paidAt != null}">Phí hủy <strong th:text="${@fmt.money(b.cancelFee)}">0đ</strong> ·
+                            Hoàn lại <strong th:text="${@fmt.money(b.refundAmount)}">0đ</strong> (3–7 ngày làm việc)</div>
+                    </div>
+                </div>
+                <div class="alert-x warn mb-4" th:if="${b.status.name() == 'EXPIRED'}">
+                    <i class="bi bi-hourglass-bottom"></i>
+                    <div>
+                        <div class="fw-semibold">Đơn đã hết thời gian giữ chỗ</div>
+                        <div>Chỗ đã được trả lại. Bạn có thể đặt lại nếu chuyến còn chỗ.</div>
+                        <a class="fw-semibold" th:href="${b.train} ? @{/tau-hoa/chuyen/{id}(id=${b.tripId})} : @{/xe-khach/chuyen/{id}(id=${b.tripId})}">Đặt lại chuyến này</a>
+                    </div>
+                </div>
+
+                <!-- ============ HANH KHACH ============ -->
+                <div class="panel mb-4">
+                    <div class="panel-head"><h2 class="h5">Hành khách</h2><span class="pill" th:text="${b.passengerCount} + ' vé'">vé</span></div>
+                    <div class="table-wrap p-2">
+                        <table class="pax-table">
+                            <thead><tr><th>Hành khách</th><th>Chỗ</th><th th:text="${b.train} ? 'Giấy tờ' : 'Liên hệ'">Giấy tờ</th><th class="r">Giá vé</th></tr></thead>
+                            <tbody>
+                            <tr th:each="t : ${b.tickets}">
+                                <td><div class="fw-semibold" th:text="${t.passengerName}">Tên</div><div class="small text-soft" th:text="${t.passengerTypeLabel}">Loại</div></td>
+                                <td class="small" th:text="${t.seatLabel}">Ghế</td>
+                                <td class="small">
+                                    <th:block th:if="${b.train}">
+                                        <div th:if="${t.idNumber != null}" th:text="${@fmt.maskId(t.idNumber)}">CCCD</div>
+                                        <div class="text-soft" th:if="${t.birthDate != null}" th:text="'Sinh ' + ${@fmt.date(t.birthDate)}">Sinh</div>
+                                        <div class="text-soft" th:if="${t.studentCardNo != null}" th:text="'Thẻ SV ' + ${t.studentCardNo}">Thẻ</div>
+                                    </th:block>
+                                    <th:block th:if="${b.bus}"><span th:text="${t.phone != null} ? ${t.phone} : '—'">—</span></th:block>
+                                </td>
+                                <td class="r fw-semibold" th:text="${@fmt.money(t.finalPrice)}">0đ</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="panel panel-pad" th:if="${b.bus}">
+                    <h2 class="h6 mb-3">Thông tin chuyến xe</h2>
+                    <div class="kv"><span>Điểm đón</span><strong th:text="${b.pickupAddress != null} ? ${b.pickupPoint + ': ' + b.pickupAddress} : ${b.pickupPoint}">đón</strong></div>
+                    <div class="kv"><span>Điểm trả</span><strong th:text="${b.dropoffPoint}">trả</strong></div>
+                    <div class="kv"><span>Hành lý ký gửi</span><strong th:text="${b.luggageKg} + ' kg'">kg</strong></div>
+                    <div class="kv" th:if="${b.note != null}"><span>Ghi chú</span><strong th:text="${b.note}">ghi chú</strong></div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="panel sticky-side">
+                    <div class="summary-trip">
+                        <div class="od"><span th:text="${b.origin}">A</span><i class="bi bi-arrow-right text-soft"></i><span th:text="${b.destination}">B</span></div>
+                        <div class="small text-soft mt-1" th:text="${b.vehicleName} + ' · ' + ${@fmt.time(b.departureTime)} + ', ' + ${@fmt.date(b.departureTime)}">info</div>
+                    </div>
+                    <div class="panel-pad">
+                        <table class="fee-table">
+                            <tr th:each="f : ${b.feeLines}">
+                                <td th:text="${f.label}">Dòng</td>
+                                <td th:classappend="${f.amount < 0} ? 'neg' : ''" th:text="${@fmt.money(f.amount)}">0đ</td>
+                            </tr>
+                        </table>
+                        <div class="total-row">
+                            <span class="fw-semibold">Tổng tiền</span>
+                            <span class="amount num" th:text="${@fmt.money(b.totalAmount)}">0đ</span>
+                        </div>
+                        <div class="mt-3 small">
+                            <div class="kv"><span>Người liên hệ</span><strong th:text="${b.contactName}">Tên</strong></div>
+                            <div class="kv"><span>Điện thoại</span><strong th:text="${b.contactPhone}">SĐT</strong></div>
+                            <div class="kv"><span>Email</span><strong class="text-break" th:text="${b.contactEmail}">email</strong></div>
+                        </div>
+                        <form th:if="${b.held}" th:action="@{/don-hang/{c}/huy(c=${b.code})}" method="post" class="mt-3"
+                              data-confirm="Hủy giữ chỗ? Các chỗ đã chọn sẽ được trả lại." data-loading>
+                            <button class="btn btn-ghost w-100" type="submit"><i class="bi bi-x-lg me-1"></i>Hủy giữ chỗ</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

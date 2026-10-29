@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Tìm vé tàu hỏa')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: nav(false)}"></nav>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<main data-kind="train">
+    <div class="container">
+        <div class="page-head">
+            <div class="crumbs"><a th:href="@{/}">Trang chủ</a> / Vé tàu hỏa</div>
+            <h1>Tìm vé tàu hỏa</h1>
+            <p class="text-soft mb-3">Tuyến đường sắt Thống Nhất Bắc – Nam và các tuyến nhánh.</p>
+        </div>
+
+        <form class="panel search-bar mb-4" th:action="@{/tau-hoa}" method="get" data-od="sFrom,sTo">
+            <div class="row align-items-end">
+                <div class="col-md-6 col-lg-3">
+                    <label class="form-label" for="sFrom">Ga đi</label>
+                    <div class="input-icon"><i class="bi bi-geo-alt"></i>
+                        <select class="form-select" id="sFrom" name="from" required>
+                            <option th:each="s : ${stations}" th:value="${s}" th:text="${s}"
+                                    th:selected="${from != null ? s == from : s == 'Hà Nội'}">Hà Nội</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-auto d-none d-lg-block">
+                    <button type="button" class="swap-btn" data-swap="sFrom,sTo" aria-label="Đổi chiều"><i class="bi bi-arrow-left-right"></i></button>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <label class="form-label" for="sTo">Ga đến</label>
+                    <div class="input-icon"><i class="bi bi-geo-alt-fill"></i>
+                        <select class="form-select" id="sTo" name="to" required>
+                            <option th:each="s : ${stations}" th:value="${s}" th:text="${s}"
+                                    th:selected="${to != null ? s == to : s == 'Đà Nẵng'}">Đà Nẵng</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg">
+                    <label class="form-label" for="sDate">Ngày đi</label>
+                    <div class="input-icon"><i class="bi bi-calendar3"></i>
+                        <input class="form-control" type="date" id="sDate" name="date" required
+                               th:value="${date}" th:min="${today}" th:max="${maxDate}">
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-auto d-grid">
+                    <button class="btn btn-rail btn-lg" type="submit"><i class="bi bi-search me-2"></i>Tìm chuyến</button>
+                </div>
+            </div>
+        </form>
+
+        <div class="alert-x error mb-4" th:if="${searchError != null}">
+            <i class="bi bi-exclamation-circle"></i><div th:text="${searchError}">Lỗi</div>
+        </div>
+
+        <th:block th:if="${searched and searchError == null}">
+            <div class="date-strip mb-3" th:if="${days != null}">
+                <a class="date-chip" th:each="d : ${days}" th:classappend="${d == date} ? 'active' : ''"
+                   th:href="@{/tau-hoa(from=${from},to=${to},date=${d})}">
+                    <small th:text="${@fmt.weekday(d)}">Thứ Hai</small>
+                    <strong th:text="${#temporals.format(d, 'dd/MM')}">01/01</strong>
+                </a>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <h2 class="h5 mb-0">
+                    <span th:text="${from}">A</span> <i class="bi bi-arrow-right mx-1 text-soft"></i> <span th:text="${to}">B</span>
+                    <span class="text-soft fw-normal" th:text="'· ' + ${@fmt.weekday(date)} + ', ' + ${@fmt.date(date)}"></span>
+                </h2>
+                <span class="text-soft small" th:text="${#lists.size(trips)} + ' chuyến'">0 chuyến</span>
+            </div>
+
+            <div th:each="t, st : ${trips}" class="trip-ticket" th:style="'animation-delay:' + ${st.index * 0.06} + 's'">
+                <div class="main">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="pill pill-train"><i class="bi bi-train-front"></i><th:block th:text="'Tàu ' + ${t.trainCode}">SE1</th:block></span>
+                        <span class="pill" th:text="${t.distanceKm} + ' km'">km</span>
+                        <span class="pill" th:if="${t.hasCoachType('SLEEPER_4')}">Có khoang 4</span>
+                    </div>
+                    <div class="timeline">
+                        <div>
+                            <div class="t" th:text="${@fmt.time(t.departureTime)}">19:25</div>
+                            <div class="p" th:text="${t.originStation}">Hà Nội</div>
+                        </div>
+                        <div class="mid">
+                            <div th:text="${t.durationText}">15 giờ</div>
+                            <div class="bar"><i class="bi bi-train-front-fill mover"></i></div>
+                            <div th:text="${@fmt.shortDate(t.departureTime)} + ' → ' + ${@fmt.shortDate(t.arrivalTime)}">dd/MM</div>
+                        </div>
+                        <div class="text-end">
+                            <div class="t" th:text="${@fmt.time(t.arrivalTime)}">10:30</div>
+                            <div class="p" th:text="${t.destinationStation}">Đà Nẵng</div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-3 small text-soft flex-wrap">
+                        <span><i class="bi bi-person-workspace me-1"></i><th:block th:text="${t.coaches.size()} + ' toa khách'">6 toa</th:block></span>
+                        <span class="d-inline-flex align-items-center gap-2">
+                            <span class="seat-meter"><span th:style="'width:' + ${available[t.id] * 100 / t.capacity} + '%'"></span></span>
+                            <th:block th:text="'Còn ' + ${available[t.id]} + '/' + ${t.capacity} + ' chỗ'">còn</th:block>
+                        </span>
+                    </div>
+                </div>
+                <div class="stub">
+                    <div class="price num"><small>Giá từ</small><th:block th:text="${@fmt.money(minPrice[t.id])}">0đ</th:block></div>
+                    <a th:if="${!closed[t.id] and available[t.id] > 0}" class="btn btn-rail" th:href="@{/tau-hoa/chuyen/{id}(id=${t.id})}">Chọn chỗ</a>
+                    <span th:if="${closed[t.id]}" class="pill">Đã đóng bán</span>
+                    <span th:if="${!closed[t.id] and available[t.id] == 0}" class="pill">Hết chỗ</span>
+                </div>
+            </div>
+
+            <div class="panel empty-state" th:if="${#lists.isEmpty(trips)}">
+                <i class="bi bi-train-front ill"></i>
+                <h3 class="h5">Chưa có chuyến tàu cho hành trình này</h3>
+                <p class="text-soft">Thử chọn ngày khác trên dải lịch, hoặc chọn một tuyến đang khai thác:</p>
+                <div class="d-flex flex-wrap gap-2 justify-content-center" th:if="${routes != null}">
+                    <a class="pill pill-train" th:each="r : ${routes}"
+                       th:href="@{/tau-hoa(from=${r[0]},to=${r[1]},date=${date})}"
+                       th:text="${r[0]} + ' → ' + ${r[1]}">A → B</a>
+                </div>
+            </div>
+        </th:block>
+
+        <div class="row g-3" th:if="${!searched}">
+            <div class="col-md-4" th:each="tip, st : ${ {'Chọn ga đi, ga đến và ngày đi rồi bấm Tìm chuyến.', 'Giá trên sơ đồ đã gồm phụ phí cuối tuần, lễ Tết (nếu có).', 'Đặt trước từ 30 ngày được giảm thêm 5% giá vé.'} }">
+                <div class="panel panel-pad h-100 reveal" th:attr="data-delay=${st.index + 1}">
+                    <i class="bi fs-3 text-success" th:classappend="${st.index == 0} ? 'bi-search' : (${st.index == 1} ? 'bi-tags' : 'bi-calendar-heart')"></i>
+                    <p class="mb-0 mt-2" th:text="${tip}">tip</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

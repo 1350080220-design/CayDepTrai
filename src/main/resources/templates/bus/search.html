@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Tìm vé xe khách')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: nav(false)}"></nav>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<main data-kind="bus">
+    <div class="container">
+        <div class="page-head">
+            <div class="crumbs"><a th:href="@{/}">Trang chủ</a> / Vé xe khách</div>
+            <h1>Tìm vé xe khách</h1>
+            <p class="text-soft mb-3">Xe giường nằm, ghế ngồi và Limousine của các nhà xe uy tín.</p>
+        </div>
+
+        <form class="panel search-bar mb-4" th:action="@{/xe-khach}" method="get" data-od="sFrom,sTo">
+            <div class="row align-items-end">
+                <div class="col-md-6 col-lg-3">
+                    <label class="form-label" for="sFrom">Nơi đi</label>
+                    <div class="input-icon"><i class="bi bi-geo-alt"></i>
+                        <select class="form-select" id="sFrom" name="from" required>
+                            <option th:each="c : ${cities}" th:value="${c}" th:text="${c}"
+                                    th:selected="${from != null ? c == from : c == 'TP. Hồ Chí Minh'}">TP. HCM</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-auto d-none d-lg-block">
+                    <button type="button" class="swap-btn" data-swap="sFrom,sTo" aria-label="Đổi chiều"><i class="bi bi-arrow-left-right"></i></button>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <label class="form-label" for="sTo">Nơi đến</label>
+                    <div class="input-icon"><i class="bi bi-geo-alt-fill"></i>
+                        <select class="form-select" id="sTo" name="to" required>
+                            <option th:each="c : ${cities}" th:value="${c}" th:text="${c}"
+                                    th:selected="${to != null ? c == to : c == 'Đà Lạt'}">Đà Lạt</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-2">
+                    <label class="form-label" for="sDate">Ngày đi</label>
+                    <input class="form-control" type="date" id="sDate" name="date" required
+                           th:value="${date}" th:min="${today}" th:max="${maxDate}">
+                </div>
+                <div class="col-md-6 col-lg-2">
+                    <label class="form-label" for="sType">Loại xe</label>
+                    <select class="form-select" id="sType" name="busType">
+                        <option value="">Tất cả</option>
+                        <option th:each="bt : ${busTypes}" th:value="${bt}" th:text="${bt.label}" th:selected="${bt == busType}">Loại</option>
+                    </select>
+                </div>
+                <div class="col-lg-auto d-grid">
+                    <button class="btn btn-coach btn-lg" type="submit"><i class="bi bi-search me-2"></i>Tìm</button>
+                </div>
+            </div>
+        </form>
+
+        <div class="alert-x error mb-4" th:if="${searchError != null}">
+            <i class="bi bi-exclamation-circle"></i><div th:text="${searchError}">Lỗi</div>
+        </div>
+
+        <th:block th:if="${searched and searchError == null}">
+            <div class="date-strip mb-3" th:if="${days != null}">
+                <a class="date-chip" th:each="d : ${days}" th:classappend="${d == date} ? 'active' : ''"
+                   th:href="@{/xe-khach(from=${from},to=${to},date=${d},busType=${busType})}">
+                    <small th:text="${@fmt.weekday(d)}">Thứ Hai</small>
+                    <strong th:text="${#temporals.format(d, 'dd/MM')}">01/01</strong>
+                </a>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <h2 class="h5 mb-0">
+                    <span th:text="${from}">A</span> <i class="bi bi-arrow-right mx-1 text-soft"></i> <span th:text="${to}">B</span>
+                    <span class="text-soft fw-normal" th:text="'· ' + ${@fmt.weekday(date)} + ', ' + ${@fmt.date(date)}"></span>
+                </h2>
+                <span class="text-soft small" th:text="${#lists.size(trips)} + ' chuyến'">0 chuyến</span>
+            </div>
+
+            <div th:each="t, st : ${trips}" class="trip-ticket" th:style="'animation-delay:' + ${st.index * 0.06} + 's'">
+                <div class="main">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="fw-bold" th:text="${t.operatorName}">Nhà xe</span>
+                        <span class="pill pill-bus"><i class="bi" th:classappend="${t.busType.icon}"></i><th:block th:text="${t.busType.label}">Loại</th:block></span>
+                    </div>
+                    <div class="timeline">
+                        <div>
+                            <div class="t" th:text="${@fmt.time(t.departureTime)}">07:00</div>
+                            <div class="p" th:text="${t.pickupPointList[0]}">Điểm đón</div>
+                        </div>
+                        <div class="mid">
+                            <div th:text="${t.durationText}">7 giờ</div>
+                            <div class="bar"><i class="bi bi-bus-front-fill mover"></i></div>
+                            <div th:text="${#lists.size(t.pickupPointList)} + ' điểm đón · ' + ${#lists.size(t.dropoffPointList)} + ' điểm trả'">điểm</div>
+                        </div>
+                        <div class="text-end">
+                            <div class="t" th:text="${@fmt.time(t.arrivalTime)}">14:00</div>
+                            <div class="p" th:text="${t.dropoffPointList[#lists.size(t.dropoffPointList) - 1]}">Điểm trả</div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-3 small text-soft flex-wrap">
+                        <span><i class="bi bi-luggage me-1"></i>20 kg miễn phí</span>
+                        <span class="d-inline-flex align-items-center gap-2">
+                            <span class="seat-meter"><span th:style="'width:' + ${available[t.id] * 100 / t.capacity} + '%'"></span></span>
+                            <th:block th:text="'Còn ' + ${available[t.id]} + '/' + ${t.capacity} + ' chỗ'">còn</th:block>
+                        </span>
+                    </div>
+                </div>
+                <div class="stub">
+                    <div class="price num"><small>Giá hiện tại từ</small><th:block th:text="${@fmt.money(minPrice[t.id])}">0đ</th:block></div>
+                    <a th:if="${!closed[t.id] and available[t.id] > 0}" class="btn btn-coach" th:href="@{/xe-khach/chuyen/{id}(id=${t.id})}">Chọn ghế</a>
+                    <span th:if="${closed[t.id]}" class="pill">Đã đóng bán</span>
+                    <span th:if="${!closed[t.id] and available[t.id] == 0}" class="pill">Hết chỗ</span>
+                </div>
+            </div>
+
+            <div class="panel empty-state" th:if="${#lists.isEmpty(trips)}">
+                <i class="bi bi-bus-front ill"></i>
+                <h3 class="h5">Chưa có chuyến xe phù hợp</h3>
+                <p class="text-soft">Thử đổi ngày, bỏ lọc loại xe, hoặc chọn một tuyến đang khai thác:</p>
+                <div class="d-flex flex-wrap gap-2 justify-content-center" th:if="${routes != null}">
+                    <a class="pill pill-bus" th:each="r : ${routes}"
+                       th:href="@{/xe-khach(from=${r[0]},to=${r[1]},date=${date})}"
+                       th:text="${r[0]} + ' → ' + ${r[1]}">A → B</a>
+                </div>
+            </div>
+        </th:block>
+
+        <div class="row g-3" th:if="${!searched}">
+            <div class="col-md-4" th:each="tip, st : ${ {'Giá động: xe càng vắng, giá càng tốt. Đặt sớm để có giá thấp nhất.', 'Nhóm từ 4 khách được giảm thêm 5% tổng giá vé.', 'Có thể chọn xe trung chuyển đón tận nhà (50.000đ/đơn).'} }">
+                <div class="panel panel-pad h-100 reveal" th:attr="data-delay=${st.index + 1}">
+                    <i class="bi fs-3 text-warning" th:classappend="${st.index == 0} ? 'bi-graph-up-arrow' : (${st.index == 1} ? 'bi-people' : 'bi-house-door')"></i>
+                    <p class="mb-0 mt-2" th:text="${tip}">tip</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Xác nhận đặt vé xe')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: nav(false)}"></nav>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<main data-kind="bus">
+    <div class="container">
+        <div class="page-head">
+            <div class="crumbs"><a th:href="@{/xe-khach}">Vé xe khách</a> / Xác nhận</div>
+            <ol th:replace="~{fragments/layout :: steps(4)}"></ol>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="panel mb-4">
+                    <div class="panel-head">
+                        <h2 class="h5">Chi tiết giá từng vé</h2>
+                        <a class="small fw-semibold" th:href="@{/xe-khach/dat-ve/hanh-khach}"><i class="bi bi-pencil me-1"></i>Sửa thông tin</a>
+                    </div>
+                    <div class="p-2 p-md-3">
+                        <div th:replace="~{fragments/quote :: paxTable(${quote})}"></div>
+                    </div>
+                </div>
+
+                <div class="panel panel-pad mb-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="small text-soft">Điểm đón</div>
+                            <div class="fw-semibold" th:text="${form.doorPickup} ? 'Đón tận nơi: ' + ${form.pickupAddress} : ${form.pickupPoint}">Điểm đón</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="small text-soft">Điểm trả</div>
+                            <div class="fw-semibold" th:text="${form.dropoffPoint}">Điểm trả</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="small text-soft">Hành lý</div>
+                            <div class="fw-semibold" th:text="${form.luggageKg} + ' kg'">0 kg</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="small text-soft">Người liên hệ</div>
+                            <div class="fw-semibold" th:text="${form.contactName} + ' · ' + ${form.contactPhone}">Tên</div>
+                        </div>
+                        <div class="col-12" th:if="${form.note != null and !#strings.isEmpty(form.note)}">
+                            <div class="small text-soft">Ghi chú</div>
+                            <div th:text="${form.note}">ghi chú</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert-x info">
+                    <i class="bi bi-shield-check"></i>
+                    <div>
+                        <strong>Chính sách hoàn hủy vé xe:</strong> hủy trước giờ xuất bến từ 24 giờ phí 10%; từ 2 đến dưới 24 giờ phí 25%;
+                        dưới 2 giờ không nhận hủy. Phí đón tận nơi không hoàn lại. <a href="/chinh-sach#hoan-huy">Xem chi tiết</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="panel sticky-side">
+                    <div class="summary-trip">
+                        <span class="pill pill-bus mb-2"><i class="bi bi-bus-front"></i><th:block th:text="${trip.operatorName}">Nhà xe</th:block></span>
+                        <div class="od"><span th:text="${trip.originCity}">A</span><i class="bi bi-arrow-right text-soft"></i><span th:text="${trip.destinationCity}">B</span></div>
+                        <div class="small text-soft mt-1" th:text="${@fmt.time(trip.departureTime)} + ' · ' + ${@fmt.weekday(trip.departureTime)} + ', ' + ${@fmt.date(trip.departureTime)}">giờ</div>
+                    </div>
+                    <div class="panel-pad">
+                        <div th:replace="~{fragments/quote :: feeTable(${quote.items}, ${quote.total})}"></div>
+                        <form th:action="@{/xe-khach/dat-ve/giu-cho}" method="post" data-loading class="mt-4">
+                            <button class="btn btn-coach btn-lg w-100" type="submit">
+                                <i class="bi bi-lock me-1"></i>Giữ chỗ <th:block th:text="${holdMinutes}">10</th:block> phút
+                            </button>
+                        </form>
+                        <p class="small text-soft mt-2 mb-0 text-center">Giá động được chốt tại thời điểm giữ chỗ.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

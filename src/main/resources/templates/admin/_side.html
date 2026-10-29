@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<aside th:fragment="side(section)" class="admin-side">
+    <div class="lbl">Tổng quan</div>
+    <a th:href="@{/admin}" th:classappend="${section == 'dashboard'} ? 'active' : ''"><i class="bi bi-speedometer2"></i>Bảng điều khiển</a>
+    <div class="lbl">Vận hành</div>
+    <a th:href="@{/admin/tau-hoa}" th:classappend="${section == 'trains'} ? 'active' : ''"><i class="bi bi-train-front"></i>Chuyến tàu</a>
+    <a th:href="@{/admin/xe-khach}" th:classappend="${section == 'buses'} ? 'active' : ''"><i class="bi bi-bus-front"></i>Chuyến xe</a>
+    <a th:href="@{/admin/don-hang}" th:classappend="${section == 'bookings'} ? 'active' : ''"><i class="bi bi-receipt"></i>Đơn đặt vé</a>
+    <a th:href="@{/admin/tu-van}" th:classappend="${section == 'consultations'} ? 'active' : ''"><i class="bi bi-headset"></i>Lịch tư vấn</a>
+    <div class="lbl">Hệ thống</div>
+    <a th:href="@{/admin/nguoi-dung}" th:classappend="${section == 'users'} ? 'active' : ''"><i class="bi bi-people"></i>Người dùng</a>
+    <a th:href="@{/}"><i class="bi bi-box-arrow-up-right"></i>Xem trang khách</a>
+</aside>
+</body>
+</html>

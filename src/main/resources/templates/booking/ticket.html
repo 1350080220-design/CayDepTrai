@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Vé điện tử ' + ${b.code})}"></head>
+<body>
+<main th:attr="data-kind=${b.train} ? 'train' : 'bus'" class="py-4">
+    <div class="container" style="max-width: 860px">
+        <div class="d-flex justify-content-between align-items-center mb-3 no-print">
+            <a class="brand" th:href="@{/}"><span class="brand-mark"><i class="bi bi-signpost-split-fill"></i></span>VietGo</a>
+            <button class="btn btn-ink" type="button" onclick="window.print()"><i class="bi bi-printer me-1"></i>In vé</button>
+        </div>
+
+        <div class="eticket mb-4" th:each="t, st : ${b.tickets}" style="page-break-inside: avoid">
+            <div class="eticket-head">
+                <div>
+                    <div class="small opacity-75" th:text="${b.ticketType.label} + ' · Vé ' + ${st.count} + '/' + ${b.passengerCount}">Vé</div>
+                    <div class="code" th:text="${b.code}">CODE</div>
+                </div>
+                <div class="text-end">
+                    <div class="small opacity-75" th:text="${b.train} ? 'Tàu' : 'Nhà xe'">Tàu</div>
+                    <div class="fw-bold" th:text="${b.vehicleName}">SE1</div>
+                </div>
+            </div>
+            <div class="eticket-body">
+                <div class="info">
+                    <div class="big-od">
+                        <div><div class="t" th:text="${@fmt.time(b.departureTime)}">00:00</div><div class="p" th:text="${b.origin}">A</div><div class="d" th:text="${@fmt.weekday(b.departureTime)} + ', ' + ${@fmt.date(b.departureTime)}">d</div></div>
+                        <i class="bi bi-arrow-right arrow"></i>
+                        <div class="right"><div class="t" th:text="${@fmt.time(b.arrivalTime)}">00:00</div><div class="p" th:text="${b.destination}">B</div><div class="d" th:text="${@fmt.date(b.arrivalTime)}">d</div></div>
+                    </div>
+                    <div class="kv"><span>Hành khách</span><strong th:text="${t.passengerName}">Tên</strong></div>
+                    <div class="kv"><span>Đối tượng</span><strong th:text="${t.passengerTypeLabel}">Loại</strong></div>
+                    <div class="kv"><span>Chỗ</span><strong th:text="${t.seatLabel}">Ghế</strong></div>
+                    <div class="kv" th:if="${t.idNumber != null}"><span>Giấy tờ</span><strong th:text="${@fmt.maskId(t.idNumber)}">CCCD</strong></div>
+                    <div class="kv" th:if="${b.bus}"><span>Điểm đón</span><strong th:text="${b.pickupAddress != null} ? ${b.pickupPoint + ': ' + b.pickupAddress} : ${b.pickupPoint}">đón</strong></div>
+                    <div class="kv"><span>Giá vé</span><strong th:text="${@fmt.money(t.finalPrice)}">0đ</strong></div>
+                </div>
+                <div class="qr">
+                    <img th:src="${qr}" alt="Mã QR" width="170" height="170">
+                    <div class="small text-soft mt-2" th:text="${b.train} ? 'Có mặt tại ga trước giờ tàu chạy 30 phút' : 'Có mặt tại điểm đón trước 15 phút'">Lưu ý</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

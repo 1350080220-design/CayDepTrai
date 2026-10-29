@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="summary(trip, form)" class="panel sticky-side">
+    <div class="summary-trip">
+        <span class="pill pill-bus mb-2"><i class="bi bi-bus-front"></i><th:block th:text="${trip.operatorName}">Nhà xe</th:block></span>
+        <div class="od"><span th:text="${trip.originCity}">A</span><i class="bi bi-arrow-right text-soft"></i><span th:text="${trip.destinationCity}">B</span></div>
+        <div class="small text-soft mt-1">
+            <i class="bi bi-calendar3 me-1"></i><th:block th:text="${@fmt.weekday(trip.departureTime)} + ', ' + ${@fmt.date(trip.departureTime)}">ngày</th:block>
+        </div>
+        <div class="kv mt-2"><span>Xuất bến</span><strong th:text="${@fmt.time(trip.departureTime)}">07:00</strong></div>
+        <div class="kv"><span>Dự kiến đến</span><strong th:text="${@fmt.dateTime(trip.arrivalTime)}">14:00</strong></div>
+        <div class="kv"><span>Loại xe</span><strong th:text="${trip.busType.label}">Loại</strong></div>
+    </div>
+    <div class="panel-pad">
+        <div class="fw-semibold mb-2">Ghế đã chọn</div>
+        <ul class="picked-list">
+            <li th:each="p : ${form.passengers}"><span th:text="${p.seatLabel}">Ghế</span></li>
+        </ul>
+        <a class="btn btn-ghost btn-sm w-100 mt-3" th:href="@{/xe-khach/dat-ve/huy-nhap}"><i class="bi bi-arrow-counterclockwise me-1"></i>Chọn lại ghế</a>
+    </div>
+</div>
+</body>
+</html>

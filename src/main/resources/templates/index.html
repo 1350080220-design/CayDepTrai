@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Đặt vé tàu hỏa & xe khách')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: nav(true)}"></nav>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<main>
+    <!-- ======================= HERO ======================= -->
+    <section class="hero">
+        <div class="container">
+            <div class="row align-items-center g-5">
+                <div class="col-lg-7">
+                    <h1>
+                        <span class="hero-word" style="animation-delay:.05s">Vé tàu,</span>
+                        <span class="hero-word" style="animation-delay:.15s">vé xe</span>
+                        <span class="hero-word" style="animation-delay:.25s">dọc dải đất</span>
+                        <span class="hero-word" style="animation-delay:.35s">hình chữ S</span>
+                    </h1>
+                    <p class="hero-lead">Chọn đúng toa, đúng giường, đúng hàng ghế trên sơ đồ thật. Giữ chỗ miễn phí 15 phút,
+                        xem rõ từng khoản phí trước khi thanh toán.</p>
+
+                    <div class="search-card">
+                        <div class="kind-tabs" data-active="train" role="tablist">
+                            <span class="glider" aria-hidden="true"></span>
+                            <button class="kind-tab active" type="button" role="tab" aria-selected="true" data-target="train">
+                                <i class="bi bi-train-front"></i>Tàu hỏa
+                            </button>
+                            <button class="kind-tab" type="button" role="tab" aria-selected="false" data-target="bus">
+                                <i class="bi bi-bus-front"></i>Xe khách
+                            </button>
+                        </div>
+
+                        <!-- Tim ve tau -->
+                        <form id="pane-train" class="search-pane show" th:action="@{/tau-hoa}" method="get"
+                              data-od="tFrom,tTo" data-kind="train">
+                            <div class="od-row mb-3">
+                                <div>
+                                    <label class="form-label" for="tFrom">Ga đi</label>
+                                    <div class="input-icon">
+                                        <i class="bi bi-geo-alt"></i>
+                                        <select class="form-select" id="tFrom" name="from" required>
+                                            <option th:each="s : ${stations}" th:value="${s}" th:text="${s}"
+                                                    th:selected="${s == 'Hà Nội'}">Hà Nội</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <button type="button" class="swap-btn" data-swap="tFrom,tTo" aria-label="Đổi chiều ga đi và ga đến">
+                                    <i class="bi bi-arrow-left-right"></i>
+                                </button>
+                                <div>
+                                    <label class="form-label" for="tTo">Ga đến</label>
+                                    <div class="input-icon">
+                                        <i class="bi bi-geo-alt-fill"></i>
+                                        <select class="form-select" id="tTo" name="to" required>
+                                            <option th:each="s : ${stations}" th:value="${s}" th:text="${s}"
+                                                    th:selected="${s == 'Đà Nẵng'}">Đà Nẵng</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row g-2 align-items-end">
+                                <div class="col-sm-7">
+                                    <label class="form-label" for="tDate">Ngày đi</label>
+                                    <div class="input-icon">
+                                        <i class="bi bi-calendar3"></i>
+                                        <input class="form-control" type="date" id="tDate" name="date" required
+                                               th:value="${tomorrow}" th:min="${today}" th:max="${maxDate}">
+                                    </div>
+                                </div>
+                                <div class="col-sm-5 d-grid">
+                                    <button class="btn btn-rail btn-lg" type="submit"><i class="bi bi-search me-2"></i>Tìm chuyến tàu</button>
+                                </div>
+                            </div>
+                        </form>
+
+                        <!-- Tim ve xe -->
+                        <form id="pane-bus" class="search-pane" th:action="@{/xe-khach}" method="get"
+                              data-od="bFrom,bTo" data-kind="bus">
+                            <div class="od-row mb-3">
+                                <div>
+                                    <label class="form-label" for="bFrom">Nơi đi</label>
+                                    <div class="input-icon">
+                                        <i class="bi bi-geo-alt"></i>
+                                        <select class="form-select" id="bFrom" name="from" required>
+                                            <option th:each="c : ${cities}" th:value="${c}" th:text="${c}"
+                                                    th:selected="${c == 'TP. Hồ Chí Minh'}">TP. Hồ Chí Minh</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <button type="button" class="swap-btn" data-swap="bFrom,bTo" aria-label="Đổi chiều nơi đi và nơi đến">
+                                    <i class="bi bi-arrow-left-right"></i>
+                                </button>
+                                <div>
+                                    <label class="form-label" for="bTo">Nơi đến</label>
+                                    <div class="input-icon">
+                                        <i class="bi bi-geo-alt-fill"></i>
+                                        <select class="form-select" id="bTo" name="to" required>
+                                            <option th:each="c : ${cities}" th:value="${c}" th:text="${c}"
+                                                    th:selected="${c == 'Đà Lạt'}">Đà Lạt</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row g-2 align-items-end">
+                                <div class="col-sm-7">
+                                    <label class="form-label" for="bDate">Ngày đi</label>
+                                    <div class="input-icon">
+                                        <i class="bi bi-calendar3"></i>
+                                        <input class="form-control" type="date" id="bDate" name="date" required
+                                               th:value="${tomorrow}" th:min="${today}" th:max="${maxDate}">
+                                    </div>
+                                </div>
+                                <div class="col-sm-5 d-grid">
+                                    <button class="btn btn-coach btn-lg" type="submit"><i class="bi bi-search me-2"></i>Tìm chuyến xe</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="hero-stats">
+                        <div><strong class="num" th:attr="data-count=${trainTripCount}" th:text="${trainTripCount}">0</strong>chuyến tàu đang mở bán</div>
+                        <div><strong class="num" th:attr="data-count=${busTripCount}" th:text="${busTripCount}">0</strong>chuyến xe khách</div>
+                        <div><strong class="num">12 ga</strong>Hà Nội → Sài Gòn</div>
+                    </div>
+                </div>
+
+                <!-- Ban do tuyen duong sat Bac Nam (SVG dong) -->
+                <div class="col-lg-5 d-none d-lg-block">
+                    <div class="route-art" aria-hidden="true">
+                        <svg viewBox="0 0 440 600">
+                            <path class="track" d="M150,50 C160,100 170,130 190,170 C210,215 240,255 262,290 C272,305 282,318 290,330 C312,365 335,395 338,430 C341,460 338,480 330,500 C310,535 260,555 200,560"/>
+                            <path class="ties" d="M150,50 C160,100 170,130 190,170 C210,215 240,255 262,290 C272,305 282,318 290,330 C312,365 335,395 338,430 C341,460 338,480 330,500 C310,535 260,555 200,560"/>
+                            <path id="railPath" class="rail-line" d="M150,50 C160,100 170,130 190,170 C210,215 240,255 262,290 C272,305 282,318 290,330 C312,365 335,395 338,430 C341,460 338,480 330,500 C310,535 260,555 200,560"/>
+                            <path class="road-line" d="M150,50 Q105,22 64,38"/>
+                            <path id="roadPath" class="road-line" d="M200,560 Q262,530 286,470"/>
+                            <path class="road-line" d="M200,560 Q236,585 262,588"/>
+
+                            <g class="stop" style="animation-delay:.4s"><circle class="halo" cx="150" cy="50" r="8"/><circle class="dot" cx="150" cy="50" r="7"/><text x="166" y="48">Hà Nội</text><text class="km" x="166" y="63">Km 0</text></g>
+                            <g class="stop" style="animation-delay:.8s"><circle class="halo" cx="190" cy="170" r="8" style="animation-delay:.6s"/><circle class="dot" cx="190" cy="170" r="6"/><text x="206" y="168">Vinh</text><text class="km" x="206" y="183">Km 319</text></g>
+                            <g class="stop" style="animation-delay:1.2s"><circle class="halo" cx="262" cy="290" r="8" style="animation-delay:1.2s"/><circle class="dot" cx="262" cy="290" r="6"/><text x="196" y="286">Huế</text><text class="km" x="196" y="301">Km 688</text></g>
+                            <g class="stop" style="animation-delay:1.5s"><circle class="halo" cx="290" cy="330" r="8" style="animation-delay:1.8s"/><circle class="dot" cx="290" cy="330" r="6"/><text x="306" y="330">Đà Nẵng</text><text class="km" x="306" y="345">Km 791</text></g>
+                            <g class="stop" style="animation-delay:1.9s"><circle class="halo" cx="338" cy="430" r="8" style="animation-delay:.9s"/><circle class="dot" cx="338" cy="430" r="6"/><text x="354" y="428">Quy Nhơn</text><text class="km" x="354" y="443">Km 1096</text></g>
+                            <g class="stop" style="animation-delay:2.3s"><circle class="halo" cx="330" cy="500" r="8" style="animation-delay:1.5s"/><circle class="dot" cx="330" cy="500" r="6"/><text x="346" y="504">Nha Trang</text><text class="km" x="346" y="519">Km 1315</text></g>
+                            <g class="stop" style="animation-delay:2.7s"><circle class="halo" cx="200" cy="560" r="8" style="animation-delay:.3s"/><circle class="dot" cx="200" cy="560" r="7"/><text x="112" y="558">Sài Gòn</text><text class="km" x="112" y="573">Km 1726</text></g>
+                            <g class="stop" style="animation-delay:2.4s"><circle class="dot" cx="64" cy="38" r="5" style="stroke:#F2AE2B"/><text x="22" y="24">Sa Pa</text></g>
+                            <g class="stop" style="animation-delay:2.8s"><circle class="dot" cx="286" cy="470" r="5" style="stroke:#F2AE2B"/><text x="226" y="474">Đà Lạt</text></g>
+
+                            <circle class="train-dot" r="6">
+                                <animateMotion dur="16s" begin="3s" repeatCount="indefinite" rotate="auto">
+                                    <mpath href="#railPath"/>
+                                </animateMotion>
+                            </circle>
+                            <circle class="bus-dot" r="5">
+                                <animateMotion dur="6s" begin="3.4s" repeatCount="indefinite" keyPoints="0;1;0" keyTimes="0;.5;1" calcMode="linear">
+                                    <mpath href="#roadPath"/>
+                                </animateMotion>
+                            </circle>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======================= HAI LOAI VE ======================= -->
+    <section class="section">
+        <div class="container">
+            <div class="row mb-4">
+                <div class="col-lg-7 reveal">
+                    <h2>Hai loại vé, hai cách tính riêng</h2>
+                    <p class="text-soft mb-0">Mỗi phương tiện có quy trình đặt, cách tính giá và điều kiện hoàn hủy phù hợp với cách bạn đi.</p>
+                </div>
+            </div>
+            <div class="row g-4">
+                <div class="col-lg-6 reveal" data-delay="1">
+                    <div class="split-card" data-kind="train">
+                        <div class="big-icon"><i class="bi bi-train-front-fill"></i></div>
+                        <h3>Vé tàu hỏa</h3>
+                        <p class="text-soft mb-0">Giá theo bậc cự ly: càng đi xa, giá mỗi km càng giảm.</p>
+                        <ul>
+                            <li><i class="bi bi-check2-circle"></i>Chọn toa ngồi mềm, giường khoang 6 hoặc khoang 4 — tầng dưới giá cao hơn tầng trên</li>
+                            <li><i class="bi bi-check2-circle"></i>Gợi ý tự động nhóm chỗ liền nhau, ưu tiên cùng khoang</li>
+                            <li><i class="bi bi-check2-circle"></i>Giảm 25% trẻ em, 10% sinh viên, 15% người cao tuổi; đặt trước 30 ngày giảm thêm 5%</li>
+                            <li><i class="bi bi-check2-circle"></i>Khai báo CCCD cho hành khách từ 14 tuổi · giữ chỗ 15 phút</li>
+                            <li><i class="bi bi-check2-circle"></i>Hủy trước 24 giờ phí 10%, trước 4 giờ phí 20%</li>
+                        </ul>
+                        <a class="btn btn-rail" th:href="@{/tau-hoa}">Tìm vé tàu</a>
+                        <i class="bi bi-train-front watermark"></i>
+                    </div>
+                </div>
+                <div class="col-lg-6 reveal" data-delay="2">
+                    <div class="split-card" data-kind="bus">
+                        <div class="big-icon"><i class="bi bi-bus-front-fill"></i></div>
+                        <h3>Vé xe khách</h3>
+                        <p class="text-soft mb-0">Giá động theo độ lấp đầy: đặt sớm khi xe còn vắng sẽ rẻ hơn.</p>
+                        <ul>
+                            <li><i class="bi bi-check2-circle"></i>Sơ đồ giường nằm 2 tầng, ghế ngồi 45 chỗ, Limousine 9 chỗ VIP</li>
+                            <li><i class="bi bi-check2-circle"></i>Chọn điểm đón, điểm trả — hoặc xe trung chuyển đón tận nhà</li>
+                            <li><i class="bi bi-check2-circle"></i>Miễn phí 20 kg hành lý/khách, nhóm từ 4 người giảm 5%</li>
+                            <li><i class="bi bi-check2-circle"></i>Trẻ 5–11 tuổi giảm 30% · giữ chỗ 10 phút</li>
+                            <li><i class="bi bi-check2-circle"></i>Hủy trước 24 giờ phí 10%, trước 2 giờ phí 25%</li>
+                        </ul>
+                        <a class="btn btn-coach" th:href="@{/xe-khach}">Tìm vé xe</a>
+                        <i class="bi bi-bus-front watermark"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======================= TUYEN PHO BIEN ======================= -->
+    <section class="section pt-0">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-4 reveal">
+                <div>
+                    <h2 class="mb-1">Tuyến được đặt nhiều</h2>
+                    <p class="text-soft mb-0">Giá tham khảo cho chỗ rẻ nhất, khởi hành ngày mai.</p>
+                </div>
+            </div>
+            <div class="row g-3">
+                <div class="col-sm-6 col-lg-4 reveal" th:each="r, st : ${routes}" th:attr="data-delay=${st.index % 3 + 1}">
+                    <a class="route-tile" th:attr="data-kind=${r.type}"
+                       th:href="${r.type == 'train'} ? @{/tau-hoa(from=${r.from},to=${r.to},date=${tomorrow})} : @{/xe-khach(from=${r.from},to=${r.to},date=${tomorrow})}">
+                        <div class="art">
+                            <svg viewBox="0 0 400 120" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                                <rect width="400" height="120" th:attr="fill=${r.type == 'train'} ? '#0B7A75' : '#F2AE2B'"/>
+                                <circle cx="320" cy="30" r="18" fill="#fff" opacity=".35"/>
+                                <path th:if="${r.image == 'mountain' or r.image == 'pine' or r.image == 'long'}" d="M0,120 L70,50 L120,95 L190,30 L260,100 L320,60 L400,120 Z" fill="#14213D" opacity=".35"/>
+                                <path th:if="${r.image == 'beach' or r.image == 'lantern' or r.image == 'hue'}" d="M0,90 C60,70 120,110 200,88 C280,66 330,104 400,84 L400,120 L0,120 Z" fill="#fff" opacity=".28"/>
+                                <path d="M0,104 L400,104" stroke="#14213D" stroke-width="3" opacity=".5"/>
+                                <path d="M0,104 L400,104" stroke="#fff" stroke-width="3" stroke-dasharray="4 12" opacity=".5"/>
+                                <rect th:if="${r.type == 'train'}" x="40" y="80" width="120" height="20" rx="6" fill="#14213D"/>
+                                <rect th:if="${r.type == 'train'}" x="165" y="82" width="70" height="18" rx="4" fill="#14213D" opacity=".85"/>
+                                <rect th:if="${r.type == 'bus'}" x="60" y="70" width="110" height="30" rx="10" fill="#14213D"/>
+                                <rect th:if="${r.type == 'bus'}" x="72" y="76" width="70" height="10" rx="3" fill="#fff" opacity=".5"/>
+                            </svg>
+                        </div>
+                        <div class="body">
+                            <span class="pill mb-2" th:classappend="${r.type == 'train'} ? 'pill-train' : 'pill-bus'">
+                                <i class="bi" th:classappend="${r.type == 'train'} ? 'bi-train-front' : 'bi-bus-front'"></i>
+                                <th:block th:text="${r.type == 'train'} ? 'Tàu hỏa' : 'Xe khách'">Tàu hỏa</th:block>
+                            </span>
+                            <div class="od"><span th:text="${r.from}">A</span><i class="bi bi-arrow-right"></i><span th:text="${r.to}">B</span></div>
+                            <div class="d-flex justify-content-between align-items-end mt-2">
+                                <span class="small text-soft" th:text="${r.note}">note</span>
+                                <span class="from-price num"><small class="text-soft fw-normal">từ </small><th:block th:text="${@fmt.money(r.fromPrice)}">0đ</th:block></span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======================= QUY TRINH ======================= -->
+    <section class="section pt-0">
+        <div class="container">
+            <div class="row g-5 align-items-center">
+                <div class="col-lg-5 reveal">
+                    <h2>Đặt vé trong bốn bước</h2>
+                    <p class="text-soft mb-4">Giữ chỗ không mất phí. Chỉ khi bạn bấm thanh toán, vé mới được xuất kèm mã QR.</p>
+                    <div class="process">
+                        <div class="process-step"><h5>Tìm chuyến</h5><p>Chọn nơi đi, nơi đến và ngày; so sánh giờ chạy, số chỗ còn trống.</p></div>
+                        <div class="process-step"><h5>Chọn chỗ trên sơ đồ</h5><p>Xem giá từng chỗ khi rê chuột; ghế đã có người đặt được đánh dấu.</p></div>
+                        <div class="process-step"><h5>Khai báo hành khách</h5><p>Chọn đối tượng để hưởng ưu đãi; hệ thống kiểm tra độ tuổi và giấy tờ.</p></div>
+                        <div class="process-step"><h5>Giữ chỗ và thanh toán</h5><p>Xem bảng phí chi tiết, giữ chỗ 10–15 phút rồi thanh toán để nhận vé điện tử.</p></div>
+                    </div>
+                </div>
+                <div class="col-lg-7 reveal" data-delay="2">
+                    <div class="eticket" data-kind="train" style="max-width:560px;margin-left:auto">
+                        <div class="eticket-head">
+                            <div><div class="small opacity-75">Mã đặt chỗ</div><div class="code">TH7KQ2M9</div></div>
+                            <span class="status status-paid" style="background:#fff">Đã thanh toán</span>
+                        </div>
+                        <div class="eticket-body">
+                            <div class="info">
+                                <div class="big-od">
+                                    <div><div class="t">20:05</div><div class="p">Hà Nội</div></div>
+                                    <i class="bi bi-arrow-right arrow"></i>
+                                    <div class="right"><div class="t">11:15</div><div class="p">Đà Nẵng</div></div>
+                                </div>
+                                <div class="kv"><span>Tàu</span><strong>SE19</strong></div>
+                                <div class="kv"><span>Chỗ</span><strong>Toa 4 · Giường 3, 4</strong></div>
+                                <div class="kv"><span>Hành khách</span><strong>2 người</strong></div>
+                            </div>
+                            <div class="qr">
+                                <svg width="140" height="140" viewBox="0 0 21 21" aria-hidden="true" shape-rendering="crispEdges">
+                                    <rect width="21" height="21" fill="#fff"/>
+                                    <path fill="#14213D" d="M0 0h7v7H0zM1 1v5h5V1zM2 2h3v3H2zM14 0h7v7h-7zM15 1v5h5V1zM16 2h3v3h-3zM0 14h7v7H0zM1 15v5h5v-5zM2 16h3v3H2zM8 0h1v2H8zM10 1h2v1h-2zM9 3h2v2H9zM8 6h1v2H8zM12 5h1v3h-1zM10 8h3v1h-3zM0 8h2v1H0zM3 9h3v1H3zM14 8h2v2h-2zM17 9h3v1h-3zM8 10h2v2H8zM11 11h3v1h-3zM15 11h1v3h-1zM18 12h3v1h-3zM8 13h1v3H8zM10 14h2v2h-2zM13 13h1v1h-1zM17 15h2v2h-2zM9 17h3v1H9zM13 16h2v3h-2zM16 18h1v3h-1zM19 18h2v1h-2zM10 19h2v2h-2zM18 20h3v1h-3z"/>
+                                </svg>
+                                <div class="small text-soft mt-2">Xuất trình mã QR khi lên tàu</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======================= CTA ======================= -->
+    <section class="section pt-0">
+        <div class="container">
+            <div class="cta-band reveal">
+                <div class="row align-items-center g-4">
+                    <div class="col-lg-8">
+                        <h2 class="mb-2">Đi đoàn đông, cần tư vấn lộ trình?</h2>
+                        <p class="mb-0">Đặt lịch hẹn 30 phút với tư vấn viên qua điện thoại, video hoặc tại văn phòng. Miễn phí, xác nhận trong ngày.</p>
+                    </div>
+                    <div class="col-lg-4 text-lg-end">
+                        <a class="btn btn-coach btn-lg" th:href="@{/tu-van}"><i class="bi bi-calendar2-plus me-2"></i>Đặt lịch tư vấn</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

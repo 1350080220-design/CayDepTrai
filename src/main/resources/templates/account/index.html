@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Tài khoản')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: nav(false)}"></nav>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<main>
+    <div class="container">
+        <div class="page-head d-flex align-items-center gap-3 flex-wrap">
+            <span class="avatar" style="width:64px;height:64px;font-size:1.4rem" th:text="${currentUser.initials}">NA</span>
+            <div>
+                <h1 class="mb-0" th:text="${currentUser.fullName}">Tên</h1>
+                <div class="text-soft">
+                    <th:block th:text="${currentUser.email}">email</th:block> ·
+                    <th:block th:text="'Thành viên từ ' + ${@fmt.date(currentUser.createdAt)}">từ</th:block>
+                    <span class="pill ms-1" th:text="${currentUser.role.label}">Vai trò</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 my-2">
+            <div class="col-6 col-lg-3"><div class="stat"><div class="lbl"><span class="ic"><i class="bi bi-receipt"></i></span>Tổng số đơn</div><div class="val" th:attr="data-count=${bookingTotal}" th:text="${bookingTotal}">0</div></div></div>
+            <div class="col-6 col-lg-3"><div class="stat rail"><div class="lbl"><span class="ic"><i class="bi bi-train-front"></i></span>Chuyến tàu đã đi/đặt</div><div class="val" th:attr="data-count=${trainTotal}" th:text="${trainTotal}">0</div></div></div>
+            <div class="col-6 col-lg-3"><div class="stat coach"><div class="lbl"><span class="ic"><i class="bi bi-bus-front"></i></span>Chuyến xe đã đi/đặt</div><div class="val" th:attr="data-count=${busTotal}" th:text="${busTotal}">0</div></div></div>
+            <div class="col-6 col-lg-3"><div class="stat"><div class="lbl"><span class="ic"><i class="bi bi-wallet2"></i></span>Đã chi tiêu</div><div class="val" th:text="${@fmt.money(spent)}">0đ</div></div></div>
+        </div>
+
+        <div class="row g-4 mt-1">
+            <div class="col-lg-7">
+                <ul class="nav nav-pills mb-3 gap-2" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="btn btn-sm" th:classappend="${passwordTab == null} ? 'btn-ink' : 'btn-ghost'" data-bs-toggle="pill"
+                                data-bs-target="#tab-info" type="button" role="tab" th:attr="aria-selected=${passwordTab == null}">Thông tin cá nhân</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="btn btn-sm" th:classappend="${passwordTab != null} ? 'btn-ink' : 'btn-ghost'" data-bs-toggle="pill"
+                                data-bs-target="#tab-pass" type="button" role="tab" th:attr="aria-selected=${passwordTab != null}">Đổi mật khẩu</button>
+                    </li>
+                </ul>
+                <div class="tab-content">
+                    <div class="tab-pane fade" th:classappend="${passwordTab == null} ? 'show active' : ''" id="tab-info" role="tabpanel">
+                        <form class="panel panel-pad" th:action="@{/tai-khoan/thong-tin}" th:object="${profileForm}" method="post" data-loading novalidate>
+                            <div class="mb-3">
+                                <label class="form-label" for="fullName">Họ và tên</label>
+                                <input class="form-control" type="text" th:field="*{fullName}" maxlength="100" th:errorclass="is-invalid">
+                                <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="phone">Số điện thoại</label>
+                                <input class="form-control" type="tel" th:field="*{phone}" maxlength="12" th:errorclass="is-invalid">
+                                <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"></div>
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label" for="emailRO">Email đăng nhập</label>
+                                <input class="form-control" id="emailRO" type="email" th:value="${currentUser.email}" disabled>
+                                <div class="form-text">Email dùng để đăng nhập nên không thể thay đổi.</div>
+                            </div>
+                            <button class="btn btn-rail" type="submit">Lưu thay đổi</button>
+                        </form>
+                    </div>
+                    <div class="tab-pane fade" th:classappend="${passwordTab != null} ? 'show active' : ''" id="tab-pass" role="tabpanel">
+                        <form class="panel panel-pad" th:action="@{/tai-khoan/mat-khau}" th:object="${passwordForm}" method="post" data-loading novalidate>
+                            <div class="mb-3">
+                                <label class="form-label" for="currentPassword">Mật khẩu hiện tại</label>
+                                <div class="input-icon"><i class="bi bi-key"></i>
+                                    <input class="form-control" type="password" th:field="*{currentPassword}" autocomplete="current-password" th:errorclass="is-invalid">
+                                    <button type="button" class="toggle-pass" aria-label="Hiện mật khẩu"><i class="bi bi-eye"></i></button>
+                                </div>
+                                <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('currentPassword')}" th:errors="*{currentPassword}"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" for="newPassword">Mật khẩu mới</label>
+                                <div class="input-icon"><i class="bi bi-key-fill"></i>
+                                    <input class="form-control" type="password" th:field="*{newPassword}" autocomplete="new-password" th:errorclass="is-invalid"
+                                           data-pw-meter="pwMeter2" data-pw-rules="pwRules2">
+                                    <button type="button" class="toggle-pass" aria-label="Hiện mật khẩu"><i class="bi bi-eye"></i></button>
+                                </div>
+                                <div class="pw-meter" id="pwMeter2" data-score="0" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+                                <ul class="pw-rules" id="pwRules2">
+                                    <li data-rule="len">8 ký tự trở lên</li><li data-rule="upper">Chữ hoa</li>
+                                    <li data-rule="lower">Chữ thường</li><li data-rule="digit">Chữ số</li>
+                                </ul>
+                                <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('newPassword')}" th:errors="*{newPassword}"></div>
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label" for="confirmPassword">Nhập lại mật khẩu mới</label>
+                                <div class="input-icon"><i class="bi bi-key-fill"></i>
+                                    <input class="form-control" type="password" th:field="*{confirmPassword}" autocomplete="new-password" th:errorclass="is-invalid">
+                                </div>
+                                <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></div>
+                            </div>
+                            <button class="btn btn-ink" type="submit">Đổi mật khẩu</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="panel">
+                    <div class="panel-head"><h2 class="h6">Đơn gần đây</h2><a class="small fw-semibold" th:href="@{/don-hang}">Xem tất cả</a></div>
+                    <a class="booking-row" th:each="b : ${recent}" th:href="@{/don-hang/{c}(c=${b.code})}" th:attr="data-kind=${b.train} ? 'train' : 'bus'">
+                        <span class="ico"><i class="bi" th:classappend="${b.ticketType.icon} + '-fill'"></i></span>
+                        <div class="min-w-0">
+                            <div class="code" th:text="${b.code}">code</div>
+                            <div class="small text-soft" th:text="${b.origin} + ' → ' + ${b.destination}">tuyến</div>
+                        </div>
+                        <div class="end text-end"><span class="status" th:classappend="'status-' + ${b.status.css}" th:text="${b.status.label}">tt</span></div>
+                    </a>
+                    <div class="empty-state py-4" th:if="${#lists.isEmpty(recent)}"><p class="text-soft mb-0">Chưa có đơn nào.</p></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+<script>
+    /* Doi mau nut tab khi chuyen */
+    document.querySelectorAll('[data-bs-toggle="pill"]').forEach(function (b) {
+        b.addEventListener("shown.bs.tab", function () {
+            document.querySelectorAll('[data-bs-toggle="pill"]').forEach(function (x) {
+                x.classList.toggle("btn-ink", x === b);
+                x.classList.toggle("btn-ghost", x !== b);
+            });
+        });
+    });
+</script>
+</body>
+</html>

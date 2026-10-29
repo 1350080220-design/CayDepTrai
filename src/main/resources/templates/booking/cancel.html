@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Hủy đơn ' + ${b.code})}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: nav(false)}"></nav>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<main th:attr="data-kind=${b.train} ? 'train' : 'bus'">
+    <div class="container" style="max-width: 760px">
+        <div class="page-head">
+            <div class="crumbs"><a th:href="@{/don-hang}">Vé của tôi</a> / <a th:href="@{/don-hang/{c}(c=${b.code})}" th:text="${b.code}">code</a> / Hủy</div>
+            <h1 th:text="${b.held} ? 'Hủy giữ chỗ' : 'Hủy vé và hoàn tiền'">Hủy vé</h1>
+            <p class="text-soft" th:text="${b.origin} + ' → ' + ${b.destination} + ' · ' + ${b.vehicleName} + ' · ' + ${@fmt.dateTime(b.departureTime)}">info</p>
+        </div>
+
+        <div class="panel panel-pad mb-4">
+            <th:block th:if="${b.held}">
+                <div class="alert-x ok mb-3"><i class="bi bi-check-circle"></i><div>Đơn chưa thanh toán nên hủy giữ chỗ không mất phí.</div></div>
+            </th:block>
+
+            <th:block th:if="${refund != null}">
+                <div class="alert-x mb-3" th:classappend="${refund.allowed} ? 'info' : 'error'">
+                    <i class="bi" th:classappend="${refund.allowed} ? 'bi-info-circle' : 'bi-x-octagon'"></i>
+                    <div>
+                        <div th:text="${refund.message}">Thông báo</div>
+                        <div class="small" th:text="'Còn ' + ${refund.hoursText} + ' trước giờ khởi hành.'">Còn</div>
+                    </div>
+                </div>
+
+                <table class="fee-table" th:if="${refund.allowed}">
+                    <tr><td>Số tiền đã thanh toán</td><td th:text="${@fmt.money(refund.paidAmount)}">0đ</td></tr>
+                    <tr th:if="${refund.nonRefundable > 0}">
+                        <td>Khoản không hoàn<span class="note" th:text="${b.train} ? 'Phí bảo hiểm hành khách' : 'Phí xe trung chuyển đón tận nơi'">ghi chú</span></td>
+                        <td class="neg" th:text="${@fmt.money(-refund.nonRefundable)}">0đ</td>
+                    </tr>
+                    <tr><td th:text="'Phí hủy ' + ${refund.feePercent} + '%'">Phí hủy</td><td class="neg" th:text="${@fmt.money(-refund.cancelFee)}">0đ</td></tr>
+                </table>
+                <div class="total-row" th:if="${refund.allowed}">
+                    <span class="fw-semibold">Số tiền được hoàn</span>
+                    <span class="amount num text-success" th:text="${@fmt.money(refund.refundAmount)}">0đ</span>
+                </div>
+            </th:block>
+
+            <form th:if="${b.held or (refund != null and refund.allowed)}" th:action="@{/don-hang/{c}/huy(c=${b.code})}" method="post"
+                  class="mt-4" data-loading data-confirm="Bạn chắc chắn muốn hủy? Thao tác này không thể hoàn tác.">
+                <label class="form-label" for="reason">Lý do hủy <span class="text-soft fw-normal">(không bắt buộc)</span></label>
+                <select class="form-select mb-3" id="reason" name="reason">
+                    <option value="">— Chọn lý do —</option>
+                    <option>Thay đổi kế hoạch đi lại</option>
+                    <option>Đặt nhầm ngày hoặc chuyến</option>
+                    <option>Tìm được phương tiện khác phù hợp hơn</option>
+                    <option>Lý do sức khỏe</option>
+                    <option>Lý do khác</option>
+                </select>
+                <div class="d-flex justify-content-between gap-2 flex-wrap">
+                    <a class="btn btn-ghost" th:href="@{/don-hang/{c}(c=${b.code})}">Giữ lại đơn</a>
+                    <button class="btn btn-danger-soft btn-lg" type="submit"><i class="bi bi-x-circle me-1"></i>Xác nhận hủy</button>
+                </div>
+            </form>
+            <a th:unless="${b.held or (refund != null and refund.allowed)}" class="btn btn-ghost mt-3" th:href="@{/don-hang/{c}(c=${b.code})}">Quay lại đơn</a>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

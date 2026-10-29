@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${form.id == null} ? 'Thêm chuyến tàu' : 'Sửa chuyến tàu')}"></head>
+<body class="no-foot-gap">
+<nav th:replace="~{fragments/layout :: nav(false)}"></nav>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<div class="admin-shell">
+    <aside th:replace="~{admin/_side :: side(${section})}"></aside>
+    <main class="admin-main" data-kind="train">
+        <div class="crumbs"><a th:href="@{/admin/tau-hoa}">Chuyến tàu</a> / <th:block th:text="${form.id == null} ? 'Thêm mới' : 'Sửa #' + ${form.id}">Thêm</th:block></div>
+        <h1 class="h3 mb-3" th:text="${form.id == null} ? 'Thêm chuyến tàu' : 'Sửa chuyến tàu ' + ${form.trainCode}">Thêm chuyến tàu</h1>
+
+        <form class="panel panel-pad" style="max-width:860px" th:action="@{/admin/tau-hoa/luu}" th:object="${form}" method="post" data-loading novalidate>
+            <input type="hidden" th:field="*{id}">
+            <div class="alert-x error mb-3" th:if="${#fields.hasGlobalErrors()}">
+                <i class="bi bi-exclamation-triangle"></i><div><div th:each="e : ${#fields.globalErrors()}" th:text="${e}">lỗi</div></div>
+            </div>
+            <div class="alert-x warn mb-3" th:if="${locked}">
+                <i class="bi bi-lock"></i><div>Chuyến đã có khách đặt: chỉ có thể đổi giờ chạy hoặc trạng thái mở bán.</div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label" for="trainCode">Mác tàu</label>
+                    <input class="form-control text-uppercase" th:field="*{trainCode}" maxlength="8" placeholder="SE1" th:errorclass="is-invalid">
+                    <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('trainCode')}" th:errors="*{trainCode}"></div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="originStation">Ga đi</label>
+                    <select class="form-select" th:field="*{originStation}" th:errorclass="is-invalid">
+                        <option value="">— Chọn —</option>
+                        <option th:each="s : ${stations}" th:value="${s}" th:text="${s}">ga</option>
+                    </select>
+                    <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('originStation')}" th:errors="*{originStation}"></div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="destinationStation">Ga đến</label>
+                    <select class="form-select" th:field="*{destinationStation}" th:errorclass="is-invalid">
+                        <option value="">— Chọn —</option>
+                        <option th:each="s : ${stations}" th:value="${s}" th:text="${s}">ga</option>
+                    </select>
+                    <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('destinationStation')}" th:errors="*{destinationStation}"></div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="distanceKm">Cự ly (km)</label>
+                    <input class="form-control" type="number" th:field="*{distanceKm}" min="10" max="2000" th:errorclass="is-invalid">
+                    <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('distanceKm')}" th:errors="*{distanceKm}"></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="departureTime">Giờ khởi hành</label>
+                    <input class="form-control" type="datetime-local" th:field="*{departureTime}" th:errorclass="is-invalid">
+                    <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('departureTime')}" th:errors="*{departureTime}"></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="arrivalTime">Giờ đến dự kiến</label>
+                    <input class="form-control" type="datetime-local" th:field="*{arrivalTime}" th:errorclass="is-invalid">
+                    <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('arrivalTime')}" th:errors="*{arrivalTime}"></div>
+                </div>
+            </div>
+
+            <h2 class="h6 mt-4 mb-2">Cơ cấu đoàn tàu</h2>
+            <p class="small text-soft">Toa được đánh số theo thứ tự: ngồi mềm → giường khoang 6 → giường khoang 4. Tổng 1–15 toa.</p>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label" for="softSeatCoaches">Toa ngồi mềm (64 chỗ)</label>
+                    <input class="form-control" type="number" th:field="*{softSeatCoaches}" min="0" max="8" th:errorclass="is-invalid">
+                    <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('softSeatCoaches')}" th:errors="*{softSeatCoaches}"></div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="sleeper6Coaches">Toa giường khoang 6 (42 chỗ)</label>
+                    <input class="form-control" type="number" th:field="*{sleeper6Coaches}" min="0" max="8" th:errorclass="is-invalid">
+                    <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('sleeper6Coaches')}" th:errors="*{sleeper6Coaches}"></div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="sleeper4Coaches">Toa giường khoang 4 (28 chỗ)</label>
+                    <input class="form-control" type="number" th:field="*{sleeper4Coaches}" min="0" max="8" th:errorclass="is-invalid">
+                    <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('sleeper4Coaches')}" th:errors="*{sleeper4Coaches}"></div>
+                </div>
+            </div>
+
+            <div class="form-check form-switch mt-4">
+                <input class="form-check-input" type="checkbox" role="switch" th:field="*{active}">
+                <label class="form-check-label" th:for="${#ids.prev('active')}">Mở bán vé</label>
+            </div>
+
+            <div class="d-flex gap-2 mt-4">
+                <button class="btn btn-rail" type="submit"><i class="bi bi-check-lg me-1"></i>Lưu chuyến tàu</button>
+                <a class="btn btn-ghost" th:href="@{/admin/tau-hoa}">Hủy</a>
+            </div>
+        </form>
+    </main>
+</div>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Bang gia tung hanh khach -->
+<div th:fragment="paxTable(quote)" class="table-wrap">
+    <table class="pax-table">
+        <thead>
+        <tr>
+            <th>Hành khách</th>
+            <th>Chỗ</th>
+            <th class="r">Giá gốc</th>
+            <th class="r">Phụ phí</th>
+            <th class="r">Giảm</th>
+            <th class="r">Thành tiền</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="f : ${quote.passengers}">
+            <td><div class="fw-semibold" th:text="${f.passengerName}">Tên</div><div class="small text-soft" th:text="${f.passengerTypeLabel}">Người lớn</div></td>
+            <td class="small" th:text="${f.seatLabel}">Ghế</td>
+            <td class="r" th:text="${@fmt.money(f.basePrice)}">0đ</td>
+            <td class="r" th:text="${f.surcharge > 0} ? '+' + ${@fmt.money(f.surcharge)} : '—'">—</td>
+            <td class="r text-success" th:text="${f.discount > 0} ? '−' + ${@fmt.money(f.discount)} : '—'">—</td>
+            <td class="r fw-bold" th:text="${@fmt.money(f.finalPrice)}">0đ</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Bang tong hop phi -->
+<div th:fragment="feeTable(items, total)">
+    <table class="fee-table">
+        <tr th:each="it, st : ${items}" th:style="'animation-delay:' + ${st.index * 0.07} + 's'">
+            <td>
+                <span th:text="${it.label}">Dòng</span>
+                <span class="note" th:if="${it.note != null}" th:text="${it.note}">ghi chú</span>
+            </td>
+            <td th:classappend="${it.discount} ? 'neg' : ''" th:text="${@fmt.money(it.amount)}">0đ</td>
+        </tr>
+    </table>
+    <div class="total-row">
+        <span class="fw-semibold">Tổng thanh toán</span>
+        <span class="amount num" th:text="${@fmt.money(total)}">0đ</span>
+    </div>
+</div>
+</body>
+</html>

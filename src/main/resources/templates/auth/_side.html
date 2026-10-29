@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<aside th:fragment="side(title, text)" class="auth-side">
+    <svg class="rails" viewBox="0 0 600 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <path class="r3" d="M-40,120 C160,160 140,330 300,360 C460,390 420,560 640,620"/>
+        <path id="authRail" class="r1" d="M-40,120 C160,160 140,330 300,360 C460,390 420,560 640,620"/>
+        <path class="r2" d="M-40,260 C120,300 200,470 340,500 C480,530 520,700 660,760"/>
+        <circle class="runner" r="6">
+            <animateMotion dur="9s" begin="2.5s" repeatCount="indefinite"><mpath href="#authRail"/></animateMotion>
+        </circle>
+    </svg>
+    <div style="position:relative">
+        <span class="pill mb-3" style="background:rgba(255,255,255,.12);color:#fff"><i class="bi bi-shield-check"></i>Tài khoản bảo mật bằng BCrypt</span>
+        <h2 th:text="${title}">Tiêu đề</h2>
+        <p th:text="${text}">Mô tả</p>
+    </div>
+</aside>
+</body>
+</html>

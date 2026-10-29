@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Đăng nhập')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: nav(false)}"></nav>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<main class="auth-wrap">
+    <aside th:replace="~{auth/_side :: side('Chào mừng bạn trở lại', 'Đăng nhập để giữ chỗ, thanh toán và quản lý toàn bộ vé tàu, vé xe của bạn ở một nơi.')}"></aside>
+
+    <section class="auth-main">
+        <div class="auth-card">
+            <h1>Đăng nhập</h1>
+            <p class="text-soft mb-4">Chưa có tài khoản? <a th:href="@{/dang-ky}" class="fw-semibold">Đăng ký miễn phí</a></p>
+
+            <div class="alert-x error mb-3" th:if="${loginError != null}" role="alert">
+                <i class="bi bi-exclamation-circle"></i><div th:text="${loginError}">Lỗi</div>
+            </div>
+            <div class="alert-x info mb-3" th:if="${param.logout != null}">
+                <i class="bi bi-info-circle"></i><div>Bạn đã đăng xuất.</div>
+            </div>
+            <div class="alert-x warn mb-3" th:if="${redirect != null and loginError == null}">
+                <i class="bi bi-lock"></i><div>Vui lòng đăng nhập để tiếp tục đặt vé.</div>
+            </div>
+
+            <form th:action="@{/dang-nhap}" method="post" data-loading novalidate class="needs-check">
+                <input type="hidden" name="redirect" th:if="${redirect != null}" th:value="${redirect}">
+                <div class="mb-3">
+                    <label class="form-label" for="email">Email</label>
+                    <div class="input-icon">
+                        <i class="bi bi-envelope"></i>
+                        <input class="form-control" type="email" id="email" name="email" required autocomplete="username"
+                               placeholder="ban@email.com" th:value="${email}">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <label class="form-label" for="password">Mật khẩu</label>
+                    </div>
+                    <div class="input-icon">
+                        <i class="bi bi-key"></i>
+                        <input class="form-control" type="password" id="password" name="password" required
+                               autocomplete="current-password" placeholder="••••••••">
+                        <button type="button" class="toggle-pass" aria-label="Hiện mật khẩu"><i class="bi bi-eye"></i></button>
+                    </div>
+                </div>
+                <div class="form-check mb-4">
+                    <input class="form-check-input" type="checkbox" id="remember" name="remember">
+                    <label class="form-check-label" for="remember">Ghi nhớ đăng nhập 7 ngày</label>
+                </div>
+                <button class="btn btn-ink btn-lg w-100" type="submit">Đăng nhập</button>
+            </form>
+
+            <div class="demo-box">
+                <div class="fw-semibold mb-1"><i class="bi bi-info-circle me-1"></i>Tài khoản dùng thử</div>
+                <div>Khách hàng: <code>khachhang@vietgo.vn</code> / <code>Khach@123</code></div>
+                <div class="mt-1">Quản trị: <code>admin@vietgo.vn</code> / <code>Admin@123</code></div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

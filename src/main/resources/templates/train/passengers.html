@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Thông tin hành khách')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: nav(false)}"></nav>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<main data-kind="train">
+    <div class="container">
+        <div class="page-head">
+            <div class="crumbs"><a th:href="@{/tau-hoa}">Vé tàu hỏa</a> / Thông tin hành khách</div>
+            <ol th:replace="~{fragments/layout :: steps(3)}"></ol>
+        </div>
+
+        <form th:action="@{/tau-hoa/dat-ve/hanh-khach}" th:object="${form}" method="post" data-loading novalidate>
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="alert-x error mb-3" th:if="${#fields.hasGlobalErrors()}">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <div><div th:each="e : ${#fields.globalErrors()}" th:text="${e}">Lỗi</div></div>
+                    </div>
+                    <div class="alert-x error mb-3" th:if="${#fields.hasErrors('*') and !#fields.hasGlobalErrors()}">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <div>Vui lòng kiểm tra lại các ô được đánh dấu đỏ.</div>
+                    </div>
+
+                    <!-- Nguoi lien he -->
+                    <div class="panel panel-pad mb-4">
+                        <h2 class="h5 mb-1">Người liên hệ</h2>
+                        <p class="small text-soft mb-3">Vé điện tử và thông báo thay đổi lịch chạy sẽ gửi tới thông tin này.</p>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label" for="contactName">Họ tên</label>
+                                <input class="form-control" type="text" th:field="*{contactName}" maxlength="100" th:errorclass="is-invalid">
+                                <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('contactName')}" th:errors="*{contactName}"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" for="contactPhone">Số điện thoại</label>
+                                <input class="form-control" type="tel" th:field="*{contactPhone}" maxlength="12" th:errorclass="is-invalid">
+                                <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('contactPhone')}" th:errors="*{contactPhone}"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" for="contactEmail">Email</label>
+                                <input class="form-control" type="email" th:field="*{contactEmail}" maxlength="120" th:errorclass="is-invalid">
+                                <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('contactEmail')}" th:errors="*{contactEmail}"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hanh khach -->
+                    <div class="pax-card" th:each="p, st : *{passengers}" th:style="'animation-delay:' + ${st.index * 0.08} + 's'"
+                         th:attr="data-pax=${st.index}">
+                        <div class="pax-head">
+                            <span class="pax-no" th:text="${st.count}">1</span>
+                            <div>
+                                <div class="fw-bold" th:text="'Hành khách ' + ${st.count}">Hành khách 1</div>
+                                <div class="small text-soft" th:text="${p.seatLabel}">Toa · Ghế</div>
+                            </div>
+                        </div>
+                        <div class="pax-body">
+                            <div class="mb-3">
+                                <span class="form-label d-block">Đối tượng</span>
+                                <div class="type-pills" role="radiogroup">
+                                    <th:block th:each="t : ${passengerTypes}">
+                                        <input type="radio" class="pax-type" th:id="|p${st.index}-type-${t}|"
+                                               th:name="|passengers[${st.index}].type|" th:value="${t}"
+                                               th:checked="${p.type == t}">
+                                        <label th:for="|p${st.index}-type-${t}|">
+                                            <th:block th:text="${t.label}">Người lớn</th:block>
+                                            <small th:if="${t.discountPercent > 0}" th:text="'−' + ${t.discountPercent} + '%'">−25%</small>
+                                        </label>
+                                    </th:block>
+                                </div>
+                                <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('passengers[__${st.index}__].type')}"
+                                     th:errors="*{passengers[__${st.index}__].type}"></div>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label" th:for="|passengers${st.index}.fullName|">Họ và tên</label>
+                                    <input class="form-control" type="text" th:field="*{passengers[__${st.index}__].fullName}"
+                                           maxlength="60" placeholder="Như trên giấy tờ" th:errorclass="is-invalid">
+                                    <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('passengers[__${st.index}__].fullName')}"
+                                         th:errors="*{passengers[__${st.index}__].fullName}"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" th:for="|passengers${st.index}.birthDate|">Ngày sinh</label>
+                                    <input class="form-control" type="date" th:field="*{passengers[__${st.index}__].birthDate}"
+                                           th:max="${today}" th:errorclass="is-invalid">
+                                    <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('passengers[__${st.index}__].birthDate')}"
+                                         th:errors="*{passengers[__${st.index}__].birthDate}"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" th:for="|passengers${st.index}.idNumber|">CCCD / Hộ chiếu</label>
+                                    <input class="form-control" type="text" th:field="*{passengers[__${st.index}__].idNumber}"
+                                           maxlength="12" placeholder="12 số CCCD" th:errorclass="is-invalid" autocomplete="off">
+                                    <div class="form-text">Bắt buộc với hành khách từ 14 tuổi.</div>
+                                    <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('passengers[__${st.index}__].idNumber')}"
+                                         th:errors="*{passengers[__${st.index}__].idNumber}"></div>
+                                </div>
+                                <div class="col-md-6 cond-field" data-for="STUDENT"
+                                     th:classappend="${p.type != null and p.type.name() == 'STUDENT'} ? 'show' : ''">
+                                    <label class="form-label" th:for="|passengers${st.index}.studentCardNo|">Mã thẻ học sinh, sinh viên</label>
+                                    <input class="form-control" type="text" th:field="*{passengers[__${st.index}__].studentCardNo}"
+                                           maxlength="15" placeholder="VD: SV2024123" th:errorclass="is-invalid">
+                                    <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('passengers[__${st.index}__].studentCardNo')}"
+                                         th:errors="*{passengers[__${st.index}__].studentCardNo}"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert-x info mb-3">
+                        <i class="bi bi-info-circle"></i>
+                        <div>Trẻ dưới 6 tuổi đi cùng người lớn được miễn vé và không chiếm chỗ. Tuổi được tính theo ngày tàu chạy.</div>
+                    </div>
+
+                    <div class="d-flex justify-content-between gap-2 flex-wrap">
+                        <a class="btn btn-ghost" th:href="@{/tau-hoa/dat-ve/huy-nhap}"><i class="bi bi-arrow-left me-1"></i>Quay lại chọn chỗ</a>
+                        <button class="btn btn-rail btn-lg" type="submit">Xem giá & xác nhận <i class="bi bi-arrow-right ms-1"></i></button>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div th:replace="~{train/_summary :: summary(${trip}, ${form})}"></div>
+                </div>
+            </div>
+        </form>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+<script>
+    /* Hien o ma the HS-SV khi chon doi tuong sinh vien */
+    document.querySelectorAll(".pax-card").forEach(function (card) {
+        var update = function () {
+            var checked = card.querySelector(".pax-type:checked");
+            var val = checked ? checked.value : "";
+            card.querySelectorAll(".cond-field").forEach(function (f) {
+                f.classList.toggle("show", f.getAttribute("data-for") === val);
+            });
+        };
+        card.querySelectorAll(".pax-type").forEach(function (r) { r.addEventListener("change", update); });
+        update();
+    });
+</script>
+</body>
+</html>

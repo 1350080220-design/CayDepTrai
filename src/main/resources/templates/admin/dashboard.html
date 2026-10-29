@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Quản trị')}"></head>
+<body class="no-foot-gap">
+<nav th:replace="~{fragments/layout :: nav(false)}"></nav>
+<div th:replace="~{fragments/layout :: flash}"></div>
+
+<div class="admin-shell">
+    <aside th:replace="~{admin/_side :: side(${section})}"></aside>
+    <main class="admin-main">
+        <div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-4">
+            <div>
+                <h1 class="h3 mb-1">Bảng điều khiển</h1>
+                <div class="text-soft">Doanh thu ròng = đã thanh toán − đã hoàn.</div>
+            </div>
+            <div class="d-flex gap-2">
+                <a class="btn btn-rail btn-sm" th:href="@{/admin/tau-hoa/moi}"><i class="bi bi-plus-lg me-1"></i>Chuyến tàu</a>
+                <a class="btn btn-coach btn-sm" th:href="@{/admin/xe-khach/moi}"><i class="bi bi-plus-lg me-1"></i>Chuyến xe</a>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-sm-6 col-xl-3">
+                <div class="stat"><div class="lbl"><span class="ic"><i class="bi bi-cash-stack"></i></span>Doanh thu ròng</div>
+                    <div class="val" th:text="${@fmt.money(totalRevenue)}">0đ</div>
+                    <div class="sub" th:text="${paidCount} + ' đơn đã thanh toán'">sub</div></div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="stat rail" style="animation-delay:.05s"><div class="lbl"><span class="ic"><i class="bi bi-train-front"></i></span>Vé tàu hỏa</div>
+                    <div class="val" th:text="${@fmt.money(trainRevenue)}">0đ</div>
+                    <div class="sub" th:text="${trainPaid} + ' đơn · ' + ${trainTrips} + ' chuyến sắp chạy'">sub</div></div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="stat coach" style="animation-delay:.1s"><div class="lbl"><span class="ic"><i class="bi bi-bus-front"></i></span>Vé xe khách</div>
+                    <div class="val" th:text="${@fmt.money(busRevenue)}">0đ</div>
+                    <div class="sub" th:text="${busPaid} + ' đơn · ' + ${busTrips} + ' chuyến sắp chạy'">sub</div></div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="stat" style="animation-delay:.15s"><div class="lbl"><span class="ic"><i class="bi bi-hourglass-split"></i></span>Đang giữ chỗ</div>
+                    <div class="val" th:attr="data-count=${heldCount}" th:text="${heldCount}">0</div>
+                    <div class="sub" th:text="${cancelledCount} + ' đã hủy · ' + ${expiredCount} + ' hết hạn'">sub</div></div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-xl-8">
+                <div class="panel mb-4">
+                    <div class="panel-head">
+                        <h2 class="h6">Doanh thu 7 ngày gần nhất</h2>
+                        <div class="legend"><span><i class="sw" style="background:var(--rail);border-color:var(--rail)"></i>Tàu hỏa</span><span><i class="sw" style="background:var(--coach-2);border-color:var(--coach-2)"></i>Xe khách</span></div>
+                    </div>
+                    <div class="panel-pad">
+                        <div class="chart-bars" role="img" aria-label="Biểu đồ doanh thu 7 ngày">
+                            <div class="col" th:each="d, ds : ${days}">
+                                <div class="val" th:text="${d.total > 0} ? ${@fmt.number(d.total / 1000)} + 'k' : ''"></div>
+                                <div class="stack" th:style="'height:' + ${d.total * 100 / maxDay} + '%;animation-delay:' + ${ds.index * 0.07} + 's'"
+                                     th:title="${d.label} + ': ' + ${@fmt.money(d.total)}">
+                                    <div class="tr" th:style="'flex:' + ${d.train}"></div>
+                                    <div class="bu" th:style="'flex:' + ${d.bus}"></div>
+                                </div>
+                                <div class="lab" th:text="${d.label}">dd/MM</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-head"><h2 class="h6">Đơn mới nhất</h2><a class="small fw-semibold" th:href="@{/admin/don-hang}">Xem tất cả</a></div>
+                    <div class="table-wrap">
+                        <table class="table-x">
+                            <thead><tr><th>Mã</th><th>Loại</th><th>Hành trình</th><th>Khách</th><th>Trạng thái</th><th class="r">Tổng</th></tr></thead>
+                            <tbody>
+                            <tr th:each="b : ${recent}">
+                                <td><a class="fw-bold num" th:href="@{/don-hang/{c}(c=${b.code})}" th:text="${b.code}">code</a></td>
+                                <td><span class="pill" th:classappend="${b.train} ? 'pill-train' : 'pill-bus'" th:text="${b.train} ? 'Tàu' : 'Xe'">Tàu</span></td>
+                                <td class="small" th:text="${b.origin} + ' → ' + ${b.destination}">A → B</td>
+                                <td class="small" th:text="${b.contactName}">Tên</td>
+                                <td><span class="status" th:classappend="'status-' + ${b.status.css}" th:text="${b.status.label}">tt</span></td>
+                                <td class="r fw-semibold" th:text="${@fmt.money(b.totalAmount)}">0đ</td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(recent)}"><td colspan="6" class="text-center text-soft py-4">Chưa có đơn nào.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-4">
+                <div class="panel mb-4">
+                    <div class="panel-head"><h2 class="h6">Lịch tư vấn sắp tới</h2>
+                        <a class="small fw-semibold" th:href="@{/admin/tu-van}" th:text="${pendingConsult} + ' chờ xác nhận'">0</a></div>
+                    <div class="px-4 pb-2">
+                        <div class="appt" th:each="a : ${upcomingConsult}">
+                            <div class="date-box">
+                                <div class="m" th:text="'Th ' + ${#temporals.format(a.appointmentTime, 'MM')}">Th</div>
+                                <div class="d" th:text="${#temporals.format(a.appointmentTime, 'dd')}">dd</div>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="fw-semibold" th:text="${@fmt.time(a.appointmentTime)} + ' · ' + ${a.fullName}">giờ</div>
+                                <div class="small text-soft" th:text="${a.topic}">chủ đề</div>
+                                <span class="status mt-1" th:classappend="'status-' + ${a.status.css}" th:text="${a.status.label}">tt</span>
+                            </div>
+                        </div>
+                        <p class="text-soft small py-3 mb-0" th:if="${#lists.isEmpty(upcomingConsult)}">Không có lịch hẹn sắp tới.</p>
+                    </div>
+                </div>
+                <div class="stat">
+                    <div class="lbl"><span class="ic"><i class="bi bi-people"></i></span>Khách hàng đã đăng ký</div>
+                    <div class="val" th:attr="data-count=${userCount}" th:text="${userCount}">0</div>
+                    <a class="small fw-semibold" th:href="@{/admin/nguoi-dung}">Quản lý người dùng</a>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>
