@@ -1,0 +1,42 @@
+package com.vietgo.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
+
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.SQLException;
+
+@Configuration
+public class DataSourceConfig {
+
+    @Bean
+    public DataSource dataSource() {
+        // Cấu hình kết nối SQL Server Local
+        DriverManagerDataSource sqlServerDs = new DriverManagerDataSource();
+        sqlServerDs.setDriverClassName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+        sqlServerDs.setUrl("jdbc:sqlserver://localhost:1433;databaseName=vietgo_db;encrypt=false;trustServerCertificate=true");
+        sqlServerDs.setUsername("sa"); // Sửa thành Username SQL Server dưới máy bạn
+        sqlServerDs.setPassword("123456"); // Sửa thành Password SQL Server dưới máy bạn
+
+        // Thử kết nối SQL Server
+        try (Connection conn = sqlServerDs.getConnection()) {
+            System.out.println("\n==========================================");
+            System.out.println(">>> ĐÃ KẾT NỐI THÀNH CÔNG SQL SERVER LOCAL!");
+            System.out.println("==========================================\n");
+            return sqlServerDs;
+        } catch (SQLException e) {
+            System.out.println("\n==========================================");
+            System.out.println(">>> TẮT SQL SERVER: TỰ ĐỘNG CHUYỂN SANG H2 (RAM)!");
+            System.out.println("==========================================\n");
+
+            // Nếu không bật SQL Server thì dùng H2
+            return new EmbeddedDatabaseBuilder()
+                    .setType(EmbeddedDatabaseType.H2)
+                    .build();
+        }
+    }
+}
