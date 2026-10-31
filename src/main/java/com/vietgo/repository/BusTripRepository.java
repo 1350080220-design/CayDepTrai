@@ -40,6 +40,9 @@ public interface BusTripRepository extends JpaRepository<BusTrip, Long> {
            "where b.active = true and b.departureTime > :now order by b.originCity, b.destinationCity")
     List<Object[]> findActiveRoutePairs(@Param("now") LocalDateTime now);
 
+    /** Cac chuyen sap chay gan nhat (bang gio khoi hanh o trang chu). */
+    List<BusTrip> findTop4ByActiveTrueAndDepartureTimeAfterOrderByDepartureTimeAsc(LocalDateTime after);
+
     @Query("select b from BusTrip b where b.departureTime >= :from order by b.departureTime asc")
     List<BusTrip> findUpcoming(@Param("from") LocalDateTime from);
 }

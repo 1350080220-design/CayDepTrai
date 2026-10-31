@@ -9,6 +9,8 @@ import com.vietgo.domain.BusPassengerType;
 import com.vietgo.domain.BusTrip;
 import com.vietgo.domain.BusType;
 import com.vietgo.domain.User;
+import com.vietgo.route.RoutePlan;
+import com.vietgo.route.RoutePlanner;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -45,13 +47,15 @@ public class BusController {
     private final BusBookingValidator validator;
     private final BookingService bookingService;
     private final CurrentUser currentUser;
+    private final RoutePlanner routePlanner;
 
     public BusController(BusService busService, BusBookingValidator validator, BookingService bookingService,
-                         CurrentUser currentUser) {
+                         CurrentUser currentUser, RoutePlanner routePlanner) {
         this.busService = busService;
         this.validator = validator;
         this.bookingService = bookingService;
         this.currentUser = currentUser;
+        this.routePlanner = routePlanner;
     }
 
     // ---------------- Buoc 1 ----------------
@@ -89,15 +93,18 @@ public class BusController {
         Map<Long, Long> minPrice = new HashMap<>();
         LocalDateTime now = LocalDateTime.now();
         Map<Long, Boolean> closed = new HashMap<>();
+        Map<Long, RoutePlan> plans = new HashMap<>();
         for (BusTrip t : trips) {
             available.put(t.getId(), busService.availableSeats(t));
             minPrice.put(t.getId(), busService.currentMinPrice(t));
             closed.put(t.getId(), now.isAfter(t.getDepartureTime().minusMinutes(BusBookingValidator.SALES_CLOSE_MINUTES)));
+            plans.put(t.getId(), routePlanner.forBus(t));
         }
         model.addAttribute("trips", trips);
         model.addAttribute("available", available);
         model.addAttribute("minPrice", minPrice);
         model.addAttribute("closed", closed);
+        model.addAttribute("plans", plans);
 
         List<LocalDate> days = new ArrayList<>();
         for (int i = -3; i <= 3; i++) {
@@ -123,7 +130,10 @@ public class BusController {
             closedReason = e.getMessage();
         }
         long occupied = busService.occupied(trip);
+        RoutePlan plan = routePlanner.forBus(trip);
         model.addAttribute("trip", trip);
+        model.addAttribute("plan", plan);
+        model.addAttribute("routeJson", routePlanner.toJson(plan));
         model.addAttribute("decks", busService.buildDeckViews(trip));
         model.addAttribute("occupied", occupied);
         model.addAttribute("occupancy", trip.getCapacity() == 0 ? 0 : occupied * 100 / trip.getCapacity());

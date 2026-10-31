@@ -56,6 +56,9 @@ public final class TrainSeatLayout {
         if (!type.isSleeper()) {
             return "Toa " + coachNo + " · Ghế " + seatNo;
         }
+        if (type.getTiers() == 1) {
+            return "Toa " + coachNo + " · Giường " + seatNo + " (khoang VIP " + compartmentOf(type, seatNo) + ")";
+        }
         return "Toa " + coachNo + " · Giường " + seatNo
                 + " (khoang " + compartmentOf(type, seatNo) + ", tầng " + tierOf(type, seatNo) + ")";
     }

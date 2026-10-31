@@ -127,6 +127,16 @@ public class TrainTrip {
         return coaches.stream().mapToInt(c -> c.getCoachType().getCapacity()).sum();
     }
 
+    public long getDurationMinutes() {
+        if (departureTime == null || arrivalTime == null) return 0;
+        return Duration.between(departureTime, arrivalTime).toMinutes();
+    }
+
+    /** Gio khoi hanh tinh bang phut trong ngay (dung de sap xep tren giao dien). */
+    public int getDepartureMinuteOfDay() {
+        return departureTime == null ? 0 : departureTime.getHour() * 60 + departureTime.getMinute();
+    }
+
     public String getDurationText() {
         if (departureTime == null || arrivalTime == null) return "";
         Duration d = Duration.between(departureTime, arrivalTime);
@@ -138,13 +148,20 @@ public class TrainTrip {
     /** Mo ta co cau toa, vd "2 ngồi mềm · 1 khoang 6 · 1 khoang 4". */
     public String getCoachSummary() {
         List<String> parts = new ArrayList<>();
-        long soft = countCoaches(TrainCoachType.SOFT_SEAT);
-        long k6 = countCoaches(TrainCoachType.SLEEPER_6);
-        long k4 = countCoaches(TrainCoachType.SLEEPER_4);
-        if (soft > 0) parts.add(soft + " ngồi mềm");
-        if (k6 > 0) parts.add(k6 + " khoang 6");
-        if (k4 > 0) parts.add(k4 + " khoang 4");
+        for (TrainCoachType type : TrainCoachType.values()) {
+            long n = countCoaches(type);
+            if (n > 0) parts.add(n + " " + type.getShortLabel());
+        }
         return String.join(" · ", parts);
+    }
+
+    /** Cac hang toa co tren doan tau, theo thu tu tu re den dat. */
+    public List<TrainCoachType> getCoachTypes() {
+        List<TrainCoachType> types = new ArrayList<>();
+        for (TrainCoachType type : TrainCoachType.values()) {
+            if (countCoaches(type) > 0) types.add(type);
+        }
+        return types;
     }
 
     public boolean hasCoachType(String typeName) {

@@ -9,7 +9,7 @@
     <!-- ======================= HERO ======================= -->
     <section class="hero">
         <div class="container">
-            <div class="row align-items-center g-5">
+            <div class="row align-items-center g-4 g-lg-5">
                 <div class="col-lg-7">
                     <h1>
                         <span class="hero-word" style="animation-delay:.05s">Vé tàu,</span>
@@ -121,7 +121,7 @@
                     <div class="hero-stats">
                         <div><strong class="num" th:attr="data-count=${trainTripCount}" th:text="${trainTripCount}">0</strong>chuyến tàu đang mở bán</div>
                         <div><strong class="num" th:attr="data-count=${busTripCount}" th:text="${busTripCount}">0</strong>chuyến xe khách</div>
-                        <div><strong class="num">12 ga</strong>Hà Nội → Sài Gòn</div>
+                        <div><strong class="num">9 hạng chỗ</strong>từ ghế phổ thông đến VIP</div>
                     </div>
                 </div>
 
@@ -163,6 +163,43 @@
         </div>
     </section>
 
+    <!-- ======================= BANG GIO KHOI HANH ======================= -->
+    <section class="section board-section" th:unless="${#lists.isEmpty(board)}">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4">
+                <div>
+                    <h2 class="mb-1">Sắp khởi hành</h2>
+                    <p class="text-soft mb-0">Các chuyến tàu và xe gần nhất vẫn còn mở bán vé.</p>
+                </div>
+                <div class="board-clock num" data-clock aria-hidden="true">--:--:--</div>
+            </div>
+            <div class="board" data-board>
+                <div class="board-row board-headrow" aria-hidden="true">
+                    <span>Giờ đi</span>
+                    <span class="b-info"><span>Chuyến</span><span>Hành trình</span><span>Hạng chỗ</span></span>
+                    <span class="b-eta">Khởi hành sau</span>
+                </div>
+                <a class="board-row" th:each="r : ${board}" th:href="@{${r.url}}" th:attr="data-dep=${r.departureIso}"
+                   th:classappend="${r.train} ? 'is-train' : 'is-bus'">
+                    <span class="b-time" data-flap="tiles" th:text="${@fmt.time(r.departure)}">19:25</span>
+                    <span class="b-info">
+                        <span class="b-code">
+                            <i class="bi" th:classappend="${r.train} ? 'bi-train-front-fill' : 'bi-bus-front-fill'" aria-hidden="true"></i>
+                            <span data-flap th:text="${r.train} ? 'Tàu ' + ${r.code} : ${r.code}">SE1</span>
+                        </span>
+                        <span class="b-route">
+                            <span data-flap th:text="${r.origin}">Hà Nội</span>
+                            <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                            <span data-flap th:text="${r.destination}">Đà Nẵng</span>
+                        </span>
+                        <span class="b-class" th:text="${r.classes}">Phổ thông</span>
+                    </span>
+                    <span class="b-eta" data-eta th:text="${@fmt.dateTime(r.departure)}">--</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
     <!-- ======================= HAI LOAI VE ======================= -->
     <section class="section">
         <div class="container">
@@ -179,8 +216,8 @@
                         <h3>Vé tàu hỏa</h3>
                         <p class="text-soft mb-0">Giá theo bậc cự ly: càng đi xa, giá mỗi km càng giảm.</p>
                         <ul>
-                            <li><i class="bi bi-check2-circle"></i>Chọn toa ngồi mềm, giường khoang 6 hoặc khoang 4 — tầng dưới giá cao hơn tầng trên</li>
-                            <li><i class="bi bi-check2-circle"></i>Gợi ý tự động nhóm chỗ liền nhau, ưu tiên cùng khoang</li>
+                            <li><i class="bi bi-check2-circle"></i>Năm hạng chỗ: ngồi cứng phổ thông, ngồi mềm, giường khoang 6, khoang 4 và khoang VIP 2 giường</li>
+                            <li><i class="bi bi-check2-circle"></i>Bản đồ lộ trình với giờ đến dự kiến từng ga, gợi ý nhóm chỗ liền nhau</li>
                             <li><i class="bi bi-check2-circle"></i>Giảm 25% trẻ em, 10% sinh viên, 15% người cao tuổi; đặt trước 30 ngày giảm thêm 5%</li>
                             <li><i class="bi bi-check2-circle"></i>Khai báo CCCD cho hành khách từ 14 tuổi · giữ chỗ 15 phút</li>
                             <li><i class="bi bi-check2-circle"></i>Hủy trước 24 giờ phí 10%, trước 4 giờ phí 20%</li>
@@ -195,8 +232,8 @@
                         <h3>Vé xe khách</h3>
                         <p class="text-soft mb-0">Giá động theo độ lấp đầy: đặt sớm khi xe còn vắng sẽ rẻ hơn.</p>
                         <ul>
-                            <li><i class="bi bi-check2-circle"></i>Sơ đồ giường nằm 2 tầng, ghế ngồi 45 chỗ, Limousine 9 chỗ VIP</li>
-                            <li><i class="bi bi-check2-circle"></i>Chọn điểm đón, điểm trả — hoặc xe trung chuyển đón tận nhà</li>
+                            <li><i class="bi bi-check2-circle"></i>Ghế ngồi 45 chỗ, giường nằm 2 tầng, phòng cabin riêng tư, Limousine 9 chỗ VIP</li>
+                            <li><i class="bi bi-check2-circle"></i>Xem trước trạm dừng nghỉ trên bản đồ; chọn điểm đón, điểm trả hoặc đón tận nhà</li>
                             <li><i class="bi bi-check2-circle"></i>Miễn phí 20 kg hành lý/khách, nhóm từ 4 người giảm 5%</li>
                             <li><i class="bi bi-check2-circle"></i>Trẻ 5–11 tuổi giảm 30% · giữ chỗ 10 phút</li>
                             <li><i class="bi bi-check2-circle"></i>Hủy trước 24 giờ phí 10%, trước 2 giờ phí 25%</li>
@@ -256,7 +293,7 @@
     <!-- ======================= QUY TRINH ======================= -->
     <section class="section pt-0">
         <div class="container">
-            <div class="row g-5 align-items-center">
+            <div class="row g-4 g-lg-5 align-items-center">
                 <div class="col-lg-5 reveal">
                     <h2>Đặt vé trong bốn bước</h2>
                     <p class="text-soft mb-4">Giữ chỗ không mất phí. Chỉ khi bạn bấm thanh toán, vé mới được xuất kèm mã QR.</p>

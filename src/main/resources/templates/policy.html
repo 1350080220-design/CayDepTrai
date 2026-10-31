@@ -49,10 +49,11 @@
                     <div class="panel panel-pad h-100 reveal" data-delay="1">
                         <h3 class="h6">2. Hệ số hạng toa và tầng giường</h3>
                         <table class="policy-table mb-3">
-                            <thead><tr><th>Hạng toa</th><th class="r">Số chỗ</th><th class="r">Hệ số</th></tr></thead>
+                            <thead><tr><th>Hạng toa</th><th>Hạng dịch vụ</th><th class="r">Số chỗ</th><th class="r">Hệ số</th></tr></thead>
                             <tbody>
                             <tr th:each="c : ${coachTypes}">
                                 <td th:text="${c.label}">Loại</td>
+                                <td><span class="cls-badge" th:classappend="'cls-' + ${c.serviceClass.css}" th:text="${c.serviceClass.label}">Hạng</span></td>
                                 <td class="r" th:text="${c.capacity}">0</td>
                                 <td class="r" th:text="'× ' + ${#numbers.formatDecimal(c.classFactor, 1, 2)}">1.00</td>
                             </tr>
@@ -66,6 +67,7 @@
                             <tr><td>Tầng 3 (trên cùng)</td><td class="r">× 0,90</td><td class="r">—</td></tr>
                             </tbody>
                         </table>
+                        <p class="small text-soft mt-2 mb-0">Khoang VIP 2 giường chỉ có một tầng, hệ số tầng × 1,00.</p>
                         <p class="small text-soft mt-2 mb-0">Giá gốc = cước cự ly × hệ số hạng toa × hệ số tầng, làm tròn đến 1.000đ.</p>
                     </div>
                 </div>
@@ -126,7 +128,7 @@
                         <h3 class="h6">2. Vị trí ghế, phụ phí và ưu đãi</h3>
                         <table class="policy-table">
                             <tbody>
-                            <tr><td>Giường tầng dưới (xe giường nằm 36 chỗ)</td><td class="r">+10%</td></tr>
+                            <tr><td>Giường / phòng tầng dưới (xe giường nằm, xe cabin)</td><td class="r">+10%</td></tr>
                             <tr><td>Hàng ghế VIP đầu xe (Limousine 9 chỗ)</td><td class="r">+15%</td></tr>
                             <tr><td>Phụ phí Lễ, Tết</td><td class="r">+25%</td></tr>
                             <tr><td>Phụ phí cuối tuần (thứ Sáu – Chủ nhật)</td><td class="r">+10%</td></tr>
@@ -140,7 +142,25 @@
                 </div>
                 <div class="col-12">
                     <div class="panel panel-pad reveal">
-                        <h3 class="h6">3. Điều kiện đặt vé</h3>
+                        <h3 class="h6">3. Loại xe và tiện ích</h3>
+                        <div class="table-wrap">
+                            <table class="policy-table">
+                                <thead><tr><th>Loại xe</th><th>Hạng dịch vụ</th><th class="r">Số chỗ</th><th>Tiện ích</th></tr></thead>
+                                <tbody>
+                                <tr th:each="bt : ${busTypes}">
+                                    <td th:text="${bt.label}">Loại</td>
+                                    <td><span class="cls-badge" th:classappend="'cls-' + ${bt.serviceClass.css}" th:text="${bt.serviceClass.label}">Hạng</span></td>
+                                    <td class="r" th:text="${bt.capacity}">0</td>
+                                    <td class="small text-soft" th:text="${#strings.listJoin(bt.amenities.![label], ', ')}">tiện ích</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="panel panel-pad reveal">
+                        <h3 class="h6">4. Điều kiện đặt vé</h3>
                         <div class="row small">
                             <div class="col-md-6">
                                 <ul class="ps-3 mb-0">

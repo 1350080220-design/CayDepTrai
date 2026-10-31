@@ -81,6 +81,34 @@ public class TrainService {
         return base + Money.percentOf(base, pct);
     }
 
+    /**
+     * Tom tat tung hang toa cua chuyen: gia nguoi lon thap nhat trong so cho con trong
+     * (hoac thap nhat cua hang neu da het cho) va so cho con trong.
+     */
+    public List<ClassOption> classOptions(TrainTrip trip, Set<String> taken) {
+        List<ClassOption> options = new ArrayList<>();
+        for (TrainCoachType type : trip.getCoachTypes()) {
+            long min = Long.MAX_VALUE;
+            long minAny = Long.MAX_VALUE;
+            long free = 0;
+            List<Integer> coachNos = new ArrayList<>();
+            for (TrainCoach coach : trip.getCoaches()) {
+                if (coach.getCoachType() != type) continue;
+                coachNos.add(coach.getCoachNo());
+                for (int no = 1; no <= type.getCapacity(); no++) {
+                    long price = displayPrice(trip, type, no);
+                    minAny = Math.min(minAny, price);
+                    if (!taken.contains(TrainSeatLayout.key(coach.getCoachNo(), no))) {
+                        free++;
+                        min = Math.min(min, price);
+                    }
+                }
+            }
+            options.add(new ClassOption(type, free > 0 ? min : minAny, free, coachNos));
+        }
+        return options;
+    }
+
     /** Lap so do tung toa. */
     public List<CoachView> buildCoachViews(TrainTrip trip) {
         Set<String> taken = takenSeats(trip.getId());
@@ -107,11 +135,12 @@ public class TrainService {
                     compartments.add(tiers);
                 }
             } else {
-                // 4 hang ngang: ghe so 4k+1 (hang A), 4k+2 (B), 4k+3 (C), 4k+4 (D)
-                for (int r = 0; r < 4; r++) {
+                // n hang ngang: voi toa 4 ghe/hang, ghe so 4k+1 (hang A), 4k+2 (B), 4k+3 (C), 4k+4 (D)
+                int across = type.getSeatsAcross();
+                for (int r = 0; r < across; r++) {
                     List<SeatView> row = new ArrayList<>();
-                    for (int col = 0; col < type.getCapacity() / 4; col++) {
-                        row.add(seats.get(col * 4 + r));
+                    for (int col = 0; col < type.getCapacity() / across; col++) {
+                        row.add(seats.get(col * across + r));
                     }
                     rows.add(row);
                 }

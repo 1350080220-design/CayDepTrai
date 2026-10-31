@@ -10,6 +10,8 @@ import com.vietgo.domain.TrainPassengerType;
 import com.vietgo.domain.TrainTrip;
 import com.vietgo.domain.User;
 import com.vietgo.repository.TrainTripRepository;
+import com.vietgo.route.RoutePlan;
+import com.vietgo.route.RoutePlanner;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -31,6 +33,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * QUY TRINH DAT VE TAU HOA (4 buoc):
@@ -48,14 +51,16 @@ public class TrainController {
     private final TrainBookingValidator validator;
     private final BookingService bookingService;
     private final CurrentUser currentUser;
+    private final RoutePlanner routePlanner;
 
     public TrainController(TrainService trainService, TrainTripRepository tripRepo, TrainBookingValidator validator,
-                           BookingService bookingService, CurrentUser currentUser) {
+                           BookingService bookingService, CurrentUser currentUser, RoutePlanner routePlanner) {
         this.trainService = trainService;
         this.tripRepo = tripRepo;
         this.validator = validator;
         this.bookingService = bookingService;
         this.currentUser = currentUser;
+        this.routePlanner = routePlanner;
     }
 
     // ---------------- Buoc 1: tim chuyen ----------------
@@ -91,16 +96,27 @@ public class TrainController {
         Map<Long, Long> available = new HashMap<>();
         Map<Long, Long> minPrice = new HashMap<>();
         Map<Long, Boolean> closed = new HashMap<>();
+        Map<Long, List<ClassOption>> classes = new HashMap<>();
+        Map<Long, RoutePlan> plans = new HashMap<>();
         LocalDateTime now = LocalDateTime.now();
         for (TrainTrip t : trips) {
-            available.put(t.getId(), trainService.availableSeats(t));
-            minPrice.put(t.getId(), trainService.minPrice(t));
+            Set<String> taken = trainService.takenSeats(t.getId());
+            List<ClassOption> options = trainService.classOptions(t, taken);
+            available.put(t.getId(), (long) t.getCapacity() - taken.size());
+            minPrice.put(t.getId(), options.stream().filter(o -> !o.isSoldOut()).mapToLong(ClassOption::getMinPrice)
+                    .min().orElse(trainService.minPrice(t)));
             closed.put(t.getId(), now.isAfter(t.getDepartureTime().minusMinutes(TrainBookingValidator.SALES_CLOSE_MINUTES)));
+            classes.put(t.getId(), options);
+            plans.put(t.getId(), routePlanner.forTrain(t));
         }
         model.addAttribute("trips", trips);
         model.addAttribute("available", available);
         model.addAttribute("minPrice", minPrice);
         model.addAttribute("closed", closed);
+        model.addAttribute("classes", classes);
+        model.addAttribute("plans", plans);
+        model.addAttribute("filterTypes", trips.stream().flatMap(t -> t.getCoachTypes().stream())
+                .distinct().sorted().toList());
 
         List<LocalDate> days = new ArrayList<>();
         for (int i = -3; i <= 3; i++) {
@@ -127,8 +143,12 @@ public class TrainController {
             open = false;
             closedReason = e.getMessage();
         }
+        RoutePlan plan = routePlanner.forTrain(trip);
         model.addAttribute("trip", trip);
         model.addAttribute("coaches", trainService.buildCoachViews(trip));
+        model.addAttribute("classOptions", trainService.classOptions(trip, trainService.takenSeats(trip.getId())));
+        model.addAttribute("plan", plan);
+        model.addAttribute("routeJson", routePlanner.toJson(plan));
         model.addAttribute("open", open);
         model.addAttribute("closedReason", closedReason);
         model.addAttribute("maxSeats", TrainBookingValidator.MAX_PASSENGERS);

@@ -90,8 +90,7 @@ public class BusService {
                     if (code == null) {
                         r.add(null);
                     } else {
-                        int tier = type == BusType.SLEEPER_36 ? (code.startsWith("A") ? 1 : 2) : 0;
-                        r.add(new SeatView(code, 0, BusSeatLayout.label(type, code), tier,
+                        r.add(new SeatView(code, 0, BusSeatLayout.label(type, code), BusSeatLayout.tierOf(type, code),
                                 fare.displayPrice(trip, code, occ), taken.contains(code)));
                     }
                 }

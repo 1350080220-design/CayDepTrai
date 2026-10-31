@@ -40,6 +40,9 @@ public interface TrainTripRepository extends JpaRepository<TrainTrip, Long> {
     @Query("select t from TrainTrip t where t.departureTime >= :from order by t.departureTime asc")
     List<TrainTrip> findUpcoming(@Param("from") LocalDateTime from);
 
+    /** Cac chuyen sap chay gan nhat (bang gio khoi hanh o trang chu). */
+    List<TrainTrip> findTop4ByActiveTrueAndDepartureTimeAfterOrderByDepartureTimeAsc(LocalDateTime after);
+
     boolean existsByTrainCodeAndDepartureTime(String trainCode, LocalDateTime departureTime);
 
     boolean existsByTrainCodeAndDepartureTimeAndIdNot(String trainCode, LocalDateTime departureTime, Long id);

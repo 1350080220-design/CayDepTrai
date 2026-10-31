@@ -60,6 +60,15 @@ public class Fmt {
         return d == null ? "" : d.format(SHORT_DATE);
     }
 
+    /** Khoang thoi gian giua hai moc: "15 giờ 10 phút", "45 phút". */
+    public String duration(LocalDateTime from, LocalDateTime to) {
+        if (from == null || to == null) return "";
+        long minutes = Math.max(0, java.time.Duration.between(from, to).toMinutes());
+        long h = minutes / 60, m = minutes % 60;
+        if (h == 0) return m + " phút";
+        return m == 0 ? h + " giờ" : h + " giờ " + m + " phút";
+    }
+
     public String isoDate(LocalDate d) {
         return d == null ? "" : d.toString();
     }

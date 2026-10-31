@@ -67,15 +67,32 @@
                     <span th:text="${from}">A</span> <i class="bi bi-arrow-right mx-1 text-soft"></i> <span th:text="${to}">B</span>
                     <span class="text-soft fw-normal" th:text="'· ' + ${@fmt.weekday(date)} + ', ' + ${@fmt.date(date)}"></span>
                 </h2>
-                <span class="text-soft small" th:text="${#lists.size(trips)} + ' chuyến'">0 chuyến</span>
+                <span class="text-soft small" data-result-count th:text="${#lists.size(trips)} + ' chuyến'">0 chuyến</span>
             </div>
 
-            <div th:each="t, st : ${trips}" class="trip-ticket" th:style="'animation-delay:' + ${st.index * 0.06} + 's'">
+            <div class="result-tools" th:unless="${#lists.isEmpty(trips)}" data-results="#trip-list" data-unit="chuyến">
+                <div class="seg" role="group" aria-label="Sắp xếp kết quả">
+                    <button type="button" class="seg-btn active" data-sort="dep" aria-pressed="true">Giờ đi sớm</button>
+                    <button type="button" class="seg-btn" data-sort="price" aria-pressed="false">Giá thấp</button>
+                    <button type="button" class="seg-btn" data-sort="dur" aria-pressed="false">Đi nhanh</button>
+                </div>
+                <div class="chip-filter" role="group" aria-label="Lọc theo hạng chỗ">
+                    <button type="button" class="cf-chip active" data-filter="" aria-pressed="true">Mọi hạng</button>
+                    <button type="button" class="cf-chip" th:each="ct : ${filterTypes}" th:classappend="'cls-' + ${ct.serviceClass.css}"
+                            th:attr="data-filter=${ct.name()}" aria-pressed="false">
+                        <span class="dot" aria-hidden="true"></span><th:block th:text="${#strings.capitalize(ct.shortLabel)}">Ngồi cứng</th:block>
+                    </button>
+                </div>
+            </div>
+
+            <div id="trip-list">
+            <div th:each="t, st : ${trips}" class="trip-ticket" th:style="'animation-delay:' + ${st.index * 0.06} + 's'"
+                 th:attr="data-dep=${t.departureMinuteOfDay},data-dur=${t.durationMinutes},data-price=${minPrice[t.id]},data-classes=${#strings.listJoin(classes[t.id].![token], ' ')}">
                 <div class="main">
                     <div class="d-flex align-items-center gap-2 flex-wrap">
                         <span class="pill pill-train"><i class="bi bi-train-front"></i><th:block th:text="'Tàu ' + ${t.trainCode}">SE1</th:block></span>
                         <span class="pill" th:text="${t.distanceKm} + ' km'">km</span>
-                        <span class="pill" th:if="${t.hasCoachType('SLEEPER_4')}">Có khoang 4</span>
+                        <span class="pill" th:text="${t.coaches.size()} + ' toa khách'">6 toa</span>
                     </div>
                     <div class="timeline">
                         <div>
@@ -92,20 +109,35 @@
                             <div class="p" th:text="${t.destinationStation}">Đà Nẵng</div>
                         </div>
                     </div>
-                    <div class="d-flex align-items-center gap-3 small text-soft flex-wrap">
-                        <span><i class="bi bi-person-workspace me-1"></i><th:block th:text="${t.coaches.size()} + ' toa khách'">6 toa</th:block></span>
-                        <span class="d-inline-flex align-items-center gap-2">
-                            <span class="seat-meter"><span th:style="'width:' + ${available[t.id] * 100 / t.capacity} + '%'"></span></span>
-                            <th:block th:text="'Còn ' + ${available[t.id]} + '/' + ${t.capacity} + ' chỗ'">còn</th:block>
+                    <div class="class-row" aria-label="Giá theo hạng chỗ">
+                        <span class="cls-chip" th:each="o : ${classes[t.id]}"
+                              th:classappend="'cls-' + ${o.type.serviceClass.css} + (${o.soldOut} ? ' sold' : '')"
+                              th:attr="data-type=${o.type.name()}">
+                            <span class="cls-name" th:text="${#strings.capitalize(o.type.shortLabel)}">Ngồi cứng</span>
+                            <strong class="num" th:text="${@fmt.money(o.minPrice)}">0đ</strong>
+                            <small th:text="${o.soldOut} ? 'Hết chỗ' : 'Còn ' + ${o.available} + ' chỗ'">còn</small>
                         </span>
                     </div>
+                    <details th:replace="~{fragments/journey :: peek(${plans[t.id]})}"></details>
                 </div>
                 <div class="stub">
-                    <div class="price num"><small>Giá từ</small><th:block th:text="${@fmt.money(minPrice[t.id])}">0đ</th:block></div>
+                    <div class="price num"><small data-price-label>Giá từ</small><span data-price-value th:text="${@fmt.money(minPrice[t.id])}">0đ</span></div>
+                    <span class="small text-soft d-inline-flex align-items-center gap-2">
+                        <span class="seat-meter"><span th:style="'width:' + ${available[t.id] * 100 / t.capacity} + '%'"></span></span>
+                        <th:block th:text="'Còn ' + ${available[t.id]} + '/' + ${t.capacity}">còn</th:block>
+                    </span>
                     <a th:if="${!closed[t.id] and available[t.id] > 0}" class="btn btn-rail" th:href="@{/tau-hoa/chuyen/{id}(id=${t.id})}">Chọn chỗ</a>
                     <span th:if="${closed[t.id]}" class="pill">Đã đóng bán</span>
                     <span th:if="${!closed[t.id] and available[t.id] == 0}" class="pill">Hết chỗ</span>
                 </div>
+            </div>
+            </div>
+
+            <div class="panel empty-state filter-empty" hidden>
+                <i class="bi bi-funnel ill"></i>
+                <h3 class="h5">Không còn chuyến nào có hạng chỗ này</h3>
+                <p class="text-soft">Chọn hạng khác hoặc xem tất cả các chuyến trong ngày.</p>
+                <button type="button" class="btn btn-ghost" data-filter-reset>Xem mọi hạng chỗ</button>
             </div>
 
             <div class="panel empty-state" th:if="${#lists.isEmpty(trips)}">
@@ -121,9 +153,9 @@
         </th:block>
 
         <div class="row g-3" th:if="${!searched}">
-            <div class="col-md-4" th:each="tip, st : ${ {'Chọn ga đi, ga đến và ngày đi rồi bấm Tìm chuyến.', 'Giá trên sơ đồ đã gồm phụ phí cuối tuần, lễ Tết (nếu có).', 'Đặt trước từ 30 ngày được giảm thêm 5% giá vé.'} }">
+            <div class="col-md-4" th:each="tip, st : ${ {'Năm hạng chỗ: ngồi cứng phổ thông, ngồi mềm, giường khoang 6, khoang 4 và khoang VIP 2 giường.', 'Giá trên sơ đồ đã gồm phụ phí cuối tuần, lễ Tết (nếu có).', 'Đặt trước từ 30 ngày được giảm thêm 5% giá vé.'} }">
                 <div class="panel panel-pad h-100 reveal" th:attr="data-delay=${st.index + 1}">
-                    <i class="bi fs-3 text-success" th:classappend="${st.index == 0} ? 'bi-search' : (${st.index == 1} ? 'bi-tags' : 'bi-calendar-heart')"></i>
+                    <i class="bi fs-3 text-success" th:classappend="${st.index == 0} ? 'bi-layers' : (${st.index == 1} ? 'bi-tags' : 'bi-calendar-heart')"></i>
                     <p class="mb-0 mt-2" th:text="${tip}">tip</p>
                 </div>
             </div>

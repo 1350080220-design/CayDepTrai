@@ -23,6 +23,7 @@ import com.vietgo.repository.BusTripRepository;
 import com.vietgo.repository.ConsultationRepository;
 import com.vietgo.repository.TrainTripRepository;
 import com.vietgo.repository.UserRepository;
+import com.vietgo.route.Railway;
 import com.vietgo.train.TrainPassengerForm;
 import com.vietgo.train.TrainPassengerItem;
 import com.vietgo.train.TrainService;
@@ -53,15 +54,27 @@ public class DataSeeder implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DataSeeder.class);
 
-    /** Ly trinh (km) cac ga tinh tu ga Ha Noi - dung de tinh cu ly giua hai ga bat ky. */
-    private static final Map<String, Integer> KM = Map.ofEntries(
-            Map.entry("Hà Nội", 0), Map.entry("Ninh Bình", 115), Map.entry("Thanh Hóa", 175),
-            Map.entry("Vinh", 319), Map.entry("Đồng Hới", 522), Map.entry("Huế", 688),
-            Map.entry("Đà Nẵng", 791), Map.entry("Quảng Ngãi", 928), Map.entry("Quy Nhơn (Diêu Trì)", 1096),
-            Map.entry("Nha Trang", 1315), Map.entry("Phan Thiết", 1551), Map.entry("Sài Gòn", 1726));
-
+    /** Mot mac tau chay hang ngay; profile quyet dinh co cau toa va toc do trung binh. */
     private record TrainLine(String code, String from, String to, LocalTime dep, String profile) {
     }
+
+    /** Co cau doan tau theo loai tau: toa duoc danh so theo thu tu trong danh sach. */
+    private static final Map<String, List<TrainCoachType>> TRAIN_PROFILES = Map.of(
+            "premium", List.of(TrainCoachType.HARD_SEAT, TrainCoachType.SOFT_SEAT, TrainCoachType.SOFT_SEAT,
+                    TrainCoachType.SLEEPER_6, TrainCoachType.SLEEPER_6, TrainCoachType.SLEEPER_4,
+                    TrainCoachType.SLEEPER_4, TrainCoachType.VIP_2),
+            "express", List.of(TrainCoachType.HARD_SEAT, TrainCoachType.SOFT_SEAT, TrainCoachType.SOFT_SEAT,
+                    TrainCoachType.SLEEPER_6, TrainCoachType.SLEEPER_6, TrainCoachType.SLEEPER_4),
+            "night", List.of(TrainCoachType.SOFT_SEAT, TrainCoachType.SLEEPER_6, TrainCoachType.SLEEPER_6,
+                    TrainCoachType.SLEEPER_4, TrainCoachType.SLEEPER_4, TrainCoachType.VIP_2),
+            "local", List.of(TrainCoachType.HARD_SEAT, TrainCoachType.HARD_SEAT, TrainCoachType.SOFT_SEAT,
+                    TrainCoachType.SLEEPER_6),
+            "day", List.of(TrainCoachType.HARD_SEAT, TrainCoachType.SOFT_SEAT, TrainCoachType.SOFT_SEAT,
+                    TrainCoachType.SOFT_SEAT));
+
+    /** Toc do thuong mai (km/h) theo loai tau, da gom thoi gian dung o cac ga. */
+    private static final Map<String, Double> TRAIN_SPEED = Map.of(
+            "premium", 54.0, "express", 52.0, "night", 50.0, "local", 42.0, "day", 50.0);
 
     private record BusLine(String operator, String plate, String from, String to, BusType type, long price,
                            int minutes, List<LocalTime> deps, String pickups, String dropoffs) {
@@ -136,33 +149,63 @@ public class DataSeeder implements CommandLineRunner {
     // ------------------------------------------------------------------ trains
 
     private void seedTrains() {
+        String hn = "Hà Nội", sg = "Sài Gòn", dn = "Đà Nẵng", hue = "Huế", vinh = "Vinh";
+        String nt = "Nha Trang", qn = "Quy Nhơn (Diêu Trì)", pt = "Phan Thiết";
         List<TrainLine> lines = List.of(
-                new TrainLine("SE1", "Hà Nội", "Sài Gòn", LocalTime.of(19, 25), "long"),
-                new TrainLine("SE3", "Hà Nội", "Sài Gòn", LocalTime.of(22, 15), "long"),
-                new TrainLine("SE2", "Sài Gòn", "Hà Nội", LocalTime.of(19, 30), "long"),
-                new TrainLine("SE4", "Sài Gòn", "Hà Nội", LocalTime.of(21, 55), "long"),
-                new TrainLine("SE19", "Hà Nội", "Đà Nẵng", LocalTime.of(20, 5), "medium"),
-                new TrainLine("SE20", "Đà Nẵng", "Hà Nội", LocalTime.of(20, 20), "medium"),
-                new TrainLine("SE7", "Hà Nội", "Huế", LocalTime.of(6, 0), "medium"),
-                new TrainLine("SE8", "Huế", "Hà Nội", LocalTime.of(10, 30), "medium"),
-                new TrainLine("NA1", "Hà Nội", "Vinh", LocalTime.of(21, 10), "medium"),
-                new TrainLine("NA2", "Vinh", "Hà Nội", LocalTime.of(21, 15), "medium"),
-                new TrainLine("SNT2", "Sài Gòn", "Nha Trang", LocalTime.of(20, 30), "medium"),
-                new TrainLine("SNT1", "Nha Trang", "Sài Gòn", LocalTime.of(20, 0), "medium"),
-                new TrainLine("SQN1", "Sài Gòn", "Quy Nhơn (Diêu Trì)", LocalTime.of(19, 40), "medium"),
-                new TrainLine("SQN2", "Quy Nhơn (Diêu Trì)", "Sài Gòn", LocalTime.of(18, 30), "medium"),
-                new TrainLine("SPT2", "Sài Gòn", "Phan Thiết", LocalTime.of(6, 40), "short"),
-                new TrainLine("SPT1", "Phan Thiết", "Sài Gòn", LocalTime.of(13, 10), "short"),
-                new TrainLine("HD1", "Huế", "Đà Nẵng", LocalTime.of(8, 0), "short"),
-                new TrainLine("HD2", "Đà Nẵng", "Huế", LocalTime.of(15, 0), "short"));
+                // Thong Nhat Ha Noi - Sai Gon
+                new TrainLine("SE1", hn, sg, LocalTime.of(19, 25), "premium"),
+                new TrainLine("SE2", sg, hn, LocalTime.of(19, 30), "premium"),
+                new TrainLine("SE3", hn, sg, LocalTime.of(22, 15), "premium"),
+                new TrainLine("SE4", sg, hn, LocalTime.of(21, 55), "premium"),
+                new TrainLine("SE5", hn, sg, LocalTime.of(8, 50), "express"),
+                new TrainLine("SE6", sg, hn, LocalTime.of(8, 45), "express"),
+                new TrainLine("SE7", hn, sg, LocalTime.of(6, 0), "express"),
+                new TrainLine("SE8", sg, hn, LocalTime.of(6, 0), "express"),
+                new TrainLine("TN1", hn, sg, LocalTime.of(10, 0), "local"),
+                new TrainLine("TN2", sg, hn, LocalTime.of(11, 0), "local"),
+                // Mien Bac - mien Trung
+                new TrainLine("SE11", hn, hue, LocalTime.of(21, 0), "night"),
+                new TrainLine("SE12", hue, hn, LocalTime.of(19, 0), "night"),
+                new TrainLine("SE19", hn, dn, LocalTime.of(20, 5), "night"),
+                new TrainLine("SE20", dn, hn, LocalTime.of(20, 20), "night"),
+                new TrainLine("NA1", hn, vinh, LocalTime.of(21, 10), "night"),
+                new TrainLine("NA2", vinh, hn, LocalTime.of(21, 15), "night"),
+                new TrainLine("NA3", hn, vinh, LocalTime.of(6, 15), "day"),
+                new TrainLine("NA4", vinh, hn, LocalTime.of(13, 20), "day"),
+                new TrainLine("QB1", hn, "Đồng Hới", LocalTime.of(13, 30), "local"),
+                new TrainLine("QB2", "Đồng Hới", hn, LocalTime.of(19, 0), "local"),
+                new TrainLine("TH1", hn, "Thanh Hóa", LocalTime.of(6, 10), "day"),
+                new TrainLine("TH2", "Thanh Hóa", hn, LocalTime.of(14, 45), "day"),
+                new TrainLine("NB1", hn, "Ninh Bình", LocalTime.of(7, 30), "day"),
+                new TrainLine("NB2", "Ninh Bình", hn, LocalTime.of(16, 30), "day"),
+                // Mien Trung
+                new TrainLine("HD1", hue, dn, LocalTime.of(8, 0), "day"),
+                new TrainLine("HD2", dn, hue, LocalTime.of(15, 0), "day"),
+                new TrainLine("HD3", hue, dn, LocalTime.of(13, 30), "day"),
+                new TrainLine("HD4", dn, hue, LocalTime.of(8, 30), "day"),
+                new TrainLine("DQ1", dn, "Quảng Ngãi", LocalTime.of(6, 30), "day"),
+                new TrainLine("DQ2", "Quảng Ngãi", dn, LocalTime.of(15, 30), "day"),
+                new TrainLine("SE21", sg, dn, LocalTime.of(10, 0), "express"),
+                new TrainLine("SE22", dn, sg, LocalTime.of(9, 0), "express"),
+                // Mien Nam
+                new TrainLine("SQN1", sg, qn, LocalTime.of(19, 40), "night"),
+                new TrainLine("SQN2", qn, sg, LocalTime.of(18, 30), "night"),
+                new TrainLine("SNT2", sg, nt, LocalTime.of(20, 30), "night"),
+                new TrainLine("SNT1", nt, sg, LocalTime.of(20, 0), "night"),
+                new TrainLine("SNT4", sg, nt, LocalTime.of(7, 15), "express"),
+                new TrainLine("SNT3", nt, sg, LocalTime.of(13, 0), "express"),
+                new TrainLine("SPT2", sg, pt, LocalTime.of(6, 40), "day"),
+                new TrainLine("SPT1", pt, sg, LocalTime.of(13, 10), "day"),
+                new TrainLine("SPT4", sg, pt, LocalTime.of(15, 30), "day"),
+                new TrainLine("SPT3", pt, sg, LocalTime.of(7, 0), "day"));
 
         LocalDate start = LocalDate.now();
         List<TrainTrip> batch = new ArrayList<>();
         for (int d = 0; d <= days; d++) {
             LocalDate day = start.plusDays(d);
             for (TrainLine l : lines) {
-                int km = Math.abs(KM.get(l.to()) - KM.get(l.from()));
-                long minutes = Math.round(km / 52.0 * 60 / 5) * 5;
+                int km = Railway.distanceKm(l.from(), l.to());
+                long minutes = Math.round(km / TRAIN_SPEED.get(l.profile()) * 60 / 5) * 5;
                 TrainTrip t = new TrainTrip();
                 t.setTrainCode(l.code());
                 t.setOriginStation(l.from());
@@ -171,26 +214,8 @@ public class DataSeeder implements CommandLineRunner {
                 t.setArrivalTime(t.getDepartureTime().plusMinutes(minutes));
                 t.setDistanceKm(km);
                 int no = 1;
-                switch (l.profile()) {
-                    case "long" -> {
-                        t.addCoach(no++, TrainCoachType.SOFT_SEAT);
-                        t.addCoach(no++, TrainCoachType.SOFT_SEAT);
-                        t.addCoach(no++, TrainCoachType.SLEEPER_6);
-                        t.addCoach(no++, TrainCoachType.SLEEPER_6);
-                        t.addCoach(no++, TrainCoachType.SLEEPER_4);
-                        t.addCoach(no, TrainCoachType.SLEEPER_4);
-                    }
-                    case "medium" -> {
-                        t.addCoach(no++, TrainCoachType.SOFT_SEAT);
-                        t.addCoach(no++, TrainCoachType.SOFT_SEAT);
-                        t.addCoach(no++, TrainCoachType.SLEEPER_6);
-                        t.addCoach(no, TrainCoachType.SLEEPER_4);
-                    }
-                    default -> {
-                        t.addCoach(no++, TrainCoachType.SOFT_SEAT);
-                        t.addCoach(no++, TrainCoachType.SOFT_SEAT);
-                        t.addCoach(no, TrainCoachType.SOFT_SEAT);
-                    }
+                for (TrainCoachType type : TRAIN_PROFILES.get(l.profile())) {
+                    t.addCoach(no++, type);
                 }
                 batch.add(t);
             }
@@ -202,55 +227,136 @@ public class DataSeeder implements CommandLineRunner {
     // ------------------------------------------------------------------ buses
 
     private void seedBuses() {
+        String hcm = "TP. Hồ Chí Minh", hn = "Hà Nội", dn = "Đà Nẵng";
         List<BusLine> lines = List.of(
-                new BusLine("Sen Vàng Express", "51B-123.45", "TP. Hồ Chí Minh", "Đà Lạt", BusType.SLEEPER_36, 290_000, 420,
+                // Tu TP. Ho Chi Minh
+                new BusLine("Sen Vàng Express", "51B-123.45", hcm, "Đà Lạt", BusType.SLEEPER_36, 290_000, 420,
                         times(7, 0, 13, 30, 22, 0),
                         "Bến xe Miền Đông mới;Văn phòng Quận 1 – 272 Đề Thám;Ngã tư Hàng Xanh",
                         "Bến xe liên tỉnh Đà Lạt;Chợ Đà Lạt;Hồ Xuân Hương"),
-                new BusLine("Mây Trắng Limousine", "51F-678.90", "TP. Hồ Chí Minh", "Đà Lạt", BusType.LIMOUSINE_9, 380_000, 390,
+                new BusLine("Mây Trắng Limousine", "51F-678.90", hcm, "Đà Lạt", BusType.LIMOUSINE_9, 380_000, 390,
                         times(8, 30, 23, 0),
                         "Văn phòng Quận 3 – 15 Nguyễn Thị Minh Khai;Sân bay Tân Sơn Nhất",
                         "Văn phòng Đà Lạt – 12 Bùi Thị Xuân;Quảng trường Lâm Viên"),
-                new BusLine("Hải Âu Express", "51B-246.80", "TP. Hồ Chí Minh", "Vũng Tàu", BusType.LIMOUSINE_9, 190_000, 120,
+                new BusLine("Đồi Thông Cabin", "49B-688.99", hcm, "Đà Lạt", BusType.CABIN_24, 420_000, 410,
+                        times(9, 30, 22, 30),
+                        "Văn phòng Quận 5 – 120 Trần Hưng Đạo;Bến xe Miền Đông mới",
+                        "Văn phòng Đà Lạt – 7 Hồ Tùng Mậu;Chợ Đà Lạt"),
+                new BusLine("Hải Âu Express", "51B-246.80", hcm, "Vũng Tàu", BusType.LIMOUSINE_9, 190_000, 120,
                         times(6, 0, 9, 0, 14, 0, 17, 30),
                         "Văn phòng Quận 1 – 98 Nguyễn Cư Trinh;Ngã tư Bình Thái",
                         "Bãi Sau – Thùy Vân;Văn phòng Vũng Tàu – 3 Lê Lợi"),
-                new BusLine("Đồng Nội Bus", "65B-135.79", "TP. Hồ Chí Minh", "Cần Thơ", BusType.SEAT_45, 165_000, 210,
+                new BusLine("Đồng Nội Bus", "51B-332.10", hcm, "Vũng Tàu", BusType.SEAT_45, 120_000, 140,
+                        times(5, 30, 11, 0, 16, 0),
+                        "Bến xe Miền Đông mới;Ngã tư Bình Thái",
+                        "Bến xe Vũng Tàu;Bãi Trước – Quang Trung"),
+                new BusLine("Đồng Nội Bus", "65B-135.79", hcm, "Cần Thơ", BusType.SEAT_45, 165_000, 210,
                         times(5, 30, 10, 0, 15, 0, 19, 0),
                         "Bến xe Miền Tây;Vòng xoay An Lạc",
                         "Bến xe Trung tâm Cần Thơ;Bến Ninh Kiều"),
-                new BusLine("Sen Vàng Express", "51B-555.21", "TP. Hồ Chí Minh", "Nha Trang", BusType.SLEEPER_36, 320_000, 510,
+                new BusLine("Phương Nam Limousine", "65F-246.88", hcm, "Cần Thơ", BusType.LIMOUSINE_9, 230_000, 180,
+                        times(7, 0, 12, 0, 17, 0),
+                        "Văn phòng Quận 10 – 45 Ba Tháng Hai;Bến xe Miền Tây",
+                        "Văn phòng Cần Thơ – 22 Hòa Bình;Bến Ninh Kiều"),
+                new BusLine("Sen Vàng Express", "51B-555.21", hcm, "Nha Trang", BusType.SLEEPER_36, 320_000, 510,
                         times(8, 0, 21, 0),
                         "Bến xe Miền Đông mới;Văn phòng Quận 1 – 272 Đề Thám",
                         "Bến xe phía Nam Nha Trang;Trần Phú – Bãi biển Nha Trang"),
-                new BusLine("Phố Núi Express", "24B-111.68", "Hà Nội", "Sa Pa", BusType.SLEEPER_36, 300_000, 330,
-                        times(7, 0, 13, 0, 22, 0),
-                        "Bến xe Mỹ Đình;Văn phòng Phố Cổ – 18 Hàng Bạc;Sân bay Nội Bài",
-                        "Trung tâm thị xã Sa Pa;Nhà thờ Đá Sa Pa"),
-                new BusLine("Mây Trắng Limousine", "29F-246.13", "Hà Nội", "Sa Pa", BusType.LIMOUSINE_9, 390_000, 320,
-                        times(6, 30, 21, 30),
-                        "Văn phòng Phố Cổ – 18 Hàng Bạc;Lotte Center Liễu Giai",
-                        "Văn phòng Sa Pa – 4 Thạch Sơn"),
-                new BusLine("Bình Minh Bus", "15B-456.12", "Hà Nội", "Hải Phòng", BusType.SEAT_45, 130_000, 120,
-                        times(6, 0, 9, 30, 13, 0, 17, 0),
-                        "Bến xe Gia Lâm;Bến xe Giáp Bát",
-                        "Bến xe Niệm Nghĩa;Bến xe Cầu Rào"),
-                new BusLine("Hải Âu Express", "29B-777.88", "Hà Nội", "Hạ Long", BusType.SEAT_45, 160_000, 150,
-                        times(7, 0, 11, 0, 15, 30),
-                        "Bến xe Mỹ Đình;Bến xe Gia Lâm",
-                        "Bến xe Bãi Cháy;Bãi Cháy – khu du lịch"),
-                new BusLine("Mây Trắng Limousine", "35F-321.09", "Hà Nội", "Ninh Bình", BusType.LIMOUSINE_9, 170_000, 120,
-                        times(7, 30, 14, 0, 18, 0),
-                        "Văn phòng Phố Cổ – 18 Hàng Bạc;Bến xe Giáp Bát",
-                        "Tràng An;Trung tâm TP. Ninh Bình"),
-                new BusLine("Phố Núi Express", "43B-909.10", "Đà Nẵng", "Hội An", BusType.LIMOUSINE_9, 120_000, 50,
+                new BusLine("Đồi Thông Cabin", "79B-456.78", hcm, "Nha Trang", BusType.CABIN_24, 450_000, 500,
+                        times(21, 30),
+                        "Văn phòng Quận 5 – 120 Trần Hưng Đạo;Bến xe Miền Đông mới",
+                        "Văn phòng Nha Trang – 58 Yersin;Trần Phú – Bãi biển Nha Trang"),
+                new BusLine("Hải Âu Express", "86B-135.24", hcm, "Phan Thiết", BusType.LIMOUSINE_9, 250_000, 200,
+                        times(7, 0, 10, 30, 14, 30),
+                        "Văn phòng Quận 1 – 98 Nguyễn Cư Trinh;Sân bay Tân Sơn Nhất",
+                        "Trung tâm TP. Phan Thiết;Mũi Né – Nguyễn Đình Chiểu"),
+                new BusLine("Sen Vàng Express", "86B-777.12", hcm, "Phan Thiết", BusType.SLEEPER_36, 180_000, 230,
+                        times(8, 0, 23, 0),
+                        "Bến xe Miền Đông mới;Ngã tư Hàng Xanh",
+                        "Bến xe Bắc Bình Thuận;Mũi Né – Nguyễn Đình Chiểu"),
+                new BusLine("Cao Nguyên Xanh", "47B-121.56", hcm, "Buôn Ma Thuột", BusType.SLEEPER_36, 280_000, 480,
+                        times(8, 0, 20, 30),
+                        "Bến xe Miền Đông mới;Ngã tư Ga",
+                        "Bến xe phía Bắc Buôn Ma Thuột;Ngã sáu Buôn Ma Thuột"),
+                new BusLine("Biển Xanh Bus", "77B-345.67", hcm, "Quy Nhơn", BusType.SLEEPER_36, 400_000, 660,
+                        times(17, 0),
+                        "Bến xe Miền Đông mới;Văn phòng Quận 1 – 272 Đề Thám",
+                        "Bến xe Quy Nhơn;Bãi biển Quy Nhơn – An Dương Vương"),
+                // Nam Trung Bo, Tay Nguyen
+                new BusLine("Mây Trắng Limousine", "79F-202.20", "Nha Trang", "Đà Lạt", BusType.LIMOUSINE_9, 220_000, 220,
+                        times(7, 0, 13, 0),
+                        "Văn phòng Nha Trang – 58 Yersin;Trần Phú – Bãi biển Nha Trang",
+                        "Văn phòng Đà Lạt – 12 Bùi Thị Xuân;Chợ Đà Lạt"),
+                new BusLine("Đồng Nội Bus", "79B-505.05", "Nha Trang", "Đà Lạt", BusType.SEAT_45, 150_000, 240,
+                        times(8, 0, 14, 30),
+                        "Bến xe phía Nam Nha Trang;Chợ Đầm",
+                        "Bến xe liên tỉnh Đà Lạt;Chợ Đà Lạt"),
+                new BusLine("Biển Xanh Bus", "43B-818.18", dn, "Quy Nhơn", BusType.SLEEPER_36, 260_000, 330,
+                        times(8, 0, 21, 0),
+                        "Bến xe Trung tâm Đà Nẵng;Cầu Rồng",
+                        "Bến xe Quy Nhơn;Bãi biển Quy Nhơn – An Dương Vương"),
+                // Mien Trung
+                new BusLine("Bình Minh Bus", "43B-202.33", dn, "Huế", BusType.SEAT_45, 120_000, 150,
+                        times(7, 0, 12, 0, 16, 30),
+                        "Bến xe Trung tâm Đà Nẵng;Cầu Rồng",
+                        "Bến xe phía Nam Huế;Đại Nội Huế"),
+                new BusLine("Phố Núi Express", "43B-909.10", dn, "Hội An", BusType.LIMOUSINE_9, 120_000, 50,
                         times(8, 0, 11, 0, 14, 0, 17, 0),
                         "Sân bay Đà Nẵng;Cầu Rồng",
                         "Phố cổ Hội An;Biển An Bàng"),
-                new BusLine("Bình Minh Bus", "43B-202.33", "Đà Nẵng", "Huế", BusType.SEAT_45, 120_000, 150,
-                        times(7, 0, 12, 0, 16, 30),
-                        "Bến xe Trung tâm Đà Nẵng;Cầu Rồng",
-                        "Bến xe phía Nam Huế;Đại Nội Huế"));
+                new BusLine("Bình Minh Bus", "43B-111.22", dn, "Hội An", BusType.SEAT_45, 60_000, 60,
+                        times(7, 30, 10, 30, 13, 30, 16, 30, 19, 30),
+                        "Bến xe Trung tâm Đà Nẵng;Chợ Hàn",
+                        "Bến xe Hội An;Phố cổ Hội An"),
+                // Tu Ha Noi
+                new BusLine("Phố Núi Express", "24B-111.68", hn, "Sa Pa", BusType.SLEEPER_36, 300_000, 330,
+                        times(7, 0, 13, 0, 22, 0),
+                        "Bến xe Mỹ Đình;Văn phòng Phố Cổ – 18 Hàng Bạc;Sân bay Nội Bài",
+                        "Trung tâm thị xã Sa Pa;Nhà thờ Đá Sa Pa"),
+                new BusLine("Mây Trắng Limousine", "29F-246.13", hn, "Sa Pa", BusType.LIMOUSINE_9, 390_000, 320,
+                        times(6, 30, 21, 30),
+                        "Văn phòng Phố Cổ – 18 Hàng Bạc;Lotte Center Liễu Giai",
+                        "Văn phòng Sa Pa – 4 Thạch Sơn"),
+                new BusLine("Đồi Thông Cabin", "24B-999.68", hn, "Sa Pa", BusType.CABIN_24, 450_000, 330,
+                        times(7, 30, 22, 30),
+                        "Văn phòng Hoàn Kiếm – 30 Trần Nhật Duật;Bến xe Mỹ Đình",
+                        "Văn phòng Sa Pa – 9 Cầu Mây;Nhà thờ Đá Sa Pa"),
+                new BusLine("Bình Minh Bus", "15B-456.12", hn, "Hải Phòng", BusType.SEAT_45, 130_000, 120,
+                        times(6, 0, 9, 30, 13, 0, 17, 0),
+                        "Bến xe Gia Lâm;Bến xe Giáp Bát",
+                        "Bến xe Niệm Nghĩa;Bến xe Cầu Rào"),
+                new BusLine("Hải Âu Express", "15F-888.66", hn, "Hải Phòng", BusType.LIMOUSINE_9, 200_000, 110,
+                        times(7, 15, 11, 15, 15, 15, 19, 15),
+                        "Văn phòng Hoàn Kiếm – 30 Trần Nhật Duật;Times City",
+                        "Văn phòng Hải Phòng – 5 Lạch Tray;Sân bay Cát Bi"),
+                new BusLine("Hải Âu Express", "29B-777.88", hn, "Hạ Long", BusType.SEAT_45, 160_000, 150,
+                        times(7, 0, 11, 0, 15, 30),
+                        "Bến xe Mỹ Đình;Bến xe Gia Lâm",
+                        "Bến xe Bãi Cháy;Bãi Cháy – khu du lịch"),
+                new BusLine("Mây Trắng Limousine", "14F-123.88", hn, "Hạ Long", BusType.LIMOUSINE_9, 250_000, 150,
+                        times(6, 30, 9, 30, 14, 30),
+                        "Văn phòng Phố Cổ – 18 Hàng Bạc;Lotte Center Liễu Giai",
+                        "Cảng tàu khách Tuần Châu;Bãi Cháy – khu du lịch"),
+                new BusLine("Mây Trắng Limousine", "35F-321.09", hn, "Ninh Bình", BusType.LIMOUSINE_9, 170_000, 120,
+                        times(7, 30, 14, 0, 18, 0),
+                        "Văn phòng Phố Cổ – 18 Hàng Bạc;Bến xe Giáp Bát",
+                        "Tràng An;Trung tâm TP. Ninh Bình"),
+                new BusLine("Bình Minh Bus", "35B-101.01", hn, "Ninh Bình", BusType.SEAT_45, 100_000, 130,
+                        times(6, 0, 9, 0, 13, 0, 16, 0),
+                        "Bến xe Giáp Bát;Bến xe Nước Ngầm",
+                        "Bến xe Ninh Bình;Tam Cốc – Bích Động"),
+                new BusLine("Bình Minh Bus", "37B-246.35", hn, "Vinh", BusType.SLEEPER_36, 230_000, 330,
+                        times(9, 0, 21, 0),
+                        "Bến xe Giáp Bát;Bến xe Nước Ngầm",
+                        "Bến xe Bắc Vinh;Bến xe Vinh"),
+                new BusLine("Bình Minh Bus", "75B-123.98", hn, "Huế", BusType.SLEEPER_36, 420_000, 780,
+                        times(17, 0),
+                        "Bến xe Giáp Bát;Bến xe Nước Ngầm",
+                        "Bến xe phía Bắc Huế;Phố đi bộ Phạm Ngũ Lão"),
+                new BusLine("Hoàng Thành Cabin", "75B-686.86", hn, "Huế", BusType.CABIN_24, 550_000, 760,
+                        times(18, 30),
+                        "Văn phòng Hoàn Kiếm – 30 Trần Nhật Duật;Bến xe Nước Ngầm",
+                        "Văn phòng Huế – 15 Lê Lợi;Đại Nội Huế"));
 
         LocalDate start = LocalDate.now();
         List<BusTrip> batch = new ArrayList<>();
@@ -309,15 +415,19 @@ public class DataSeeder implements CommandLineRunner {
         demoBus(ha, "Hà Nội", "Sa Pa", base.plusDays(4), BusType.SLEEPER_36, 4, PaymentMethod.INTL_CARD, 3);
         demoBus(demo, "Đà Nẵng", "Hội An", base.plusDays(1), BusType.LIMOUSINE_9, 2, PaymentMethod.BANK_CARD, 2);
         demoBus(ha, "TP. Hồ Chí Minh", "Vũng Tàu", base, BusType.LIMOUSINE_9, 3, PaymentMethod.E_WALLET, 0);
+        demoTrain(ha, "Hà Nội", "Sài Gòn", base.plusDays(6), TrainCoachType.VIP_2, 2, PaymentMethod.INTL_CARD, 2);
+        demoTrain(demo, "Sài Gòn", "Phan Thiết", base.plusDays(2), TrainCoachType.HARD_SEAT, 3, PaymentMethod.E_WALLET, 1);
+        demoBus(demo, "Hà Nội", "Sa Pa", base.plusDays(7), BusType.CABIN_24, 2, PaymentMethod.BANK_CARD, 1);
         log.info("Da tao don dat ve mau");
     }
 
     private void demoTrain(User user, String from, String to, LocalDate date, TrainCoachType type, int n,
                            PaymentMethod method, int paidDaysAgo) {
         tx.executeWithoutResult(status -> {
-            List<TrainTrip> trips = trainService.search(from, to, date);
-            if (trips.isEmpty()) return;
-            TrainTrip trip = trips.get(0);
+            TrainTrip trip = trainService.search(from, to, date).stream()
+                    .filter(t -> t.countCoaches(type) > 0)
+                    .findFirst().orElse(null);
+            if (trip == null) return;
             List<String> seats = trainService.suggestSeats(trip, type, n);
             if (seats.size() != n) return;
             TrainPassengerForm f = new TrainPassengerForm();

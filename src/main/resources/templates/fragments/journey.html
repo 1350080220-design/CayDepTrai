@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- ============================ LO TRINH: BAN DO + TIMELINE ============================ -->
+<section th:fragment="journey(plan, json)" class="panel journey" id="lo-trinh"
+         th:attr="data-journey=${json},data-kind=${plan.mode}" aria-labelledby="journey-title">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+    <div class="panel-head journey-head">
+        <div>
+            <h2 class="h5" id="journey-title">Lộ trình và điểm dừng nghỉ</h2>
+            <p class="small text-soft mb-0" th:if="${plan.mode == 'train'}">Giờ đến từng ga là dự kiến, tính theo cự ly và thời gian dừng đỗ.</p>
+            <p class="small text-soft mb-0" th:if="${plan.mode == 'bus'}">Lộ trình dự kiến của nhà xe; giờ nghỉ có thể lệch theo tình hình giao thông.</p>
+        </div>
+        <div class="journey-facts">
+            <span><strong class="num" th:text="${plan.totalKm}">0</strong>km</span>
+            <span th:if="${plan.mode == 'train'}"><strong class="num" th:text="${plan.stationCount}">0</strong>ga dừng</span>
+            <span th:if="${plan.mode == 'bus'}"><strong class="num" th:text="${plan.restCount}">0</strong>lần nghỉ</span>
+            <span><strong class="num" th:text="${plan.totalDwellMinutes}">0</strong>phút dừng đỗ</span>
+        </div>
+    </div>
+    <div class="journey-body">
+        <div class="journey-stage">
+            <div class="journey-map" th:attr="aria-label='Bản đồ lộ trình ' + ${plan.stops[0].name} + ' đến ' + ${plan.stops[plan.stops.size() - 1].name}">
+                <div class="journey-map-fallback">
+                    <i class="bi bi-map"></i>
+                    <span th:text="${plan.mapped} ? 'Không tải được bản đồ (cần kết nối Internet). Xem lộ trình chi tiết trong danh sách.' : 'Chưa có dữ liệu bản đồ cho tuyến này. Xem điểm đi và điểm đến trong danh sách.'">Không tải được bản đồ.</span>
+                </div>
+            </div>
+            <div class="journey-hud" aria-live="polite">
+                <span class="hud-clock num" th:text="${@fmt.time(plan.departure)}">00:00</span>
+                <span class="hud-day" th:text="${@fmt.weekday(plan.departure)} + ', ' + ${@fmt.shortDate(plan.departure)}">Thứ Hai</span>
+                <span class="hud-status" th:text="'Sẵn sàng khởi hành tại ' + ${plan.stops[0].name}">Sẵn sàng</span>
+            </div>
+            <div class="journey-controls">
+                <button type="button" class="jc-play" aria-label="Phát hành trình"><i class="bi bi-play-fill"></i></button>
+                <input type="range" class="jc-range" min="0" max="1000" value="0" step="1" aria-label="Tua theo thời gian hành trình">
+                <span class="jc-eta num" th:text="'Tổng ' + ${@fmt.duration(plan.departure, plan.arrival)}">--</span>
+            </div>
+        </div>
+        <ol class="journey-timeline">
+            <li class="jt-item" th:each="s, ss : ${plan.stops}" th:classappend="'jt-' + ${s.kind.css}"
+                th:attr="data-idx=${ss.index}">
+                <button type="button" class="jt-btn">
+                    <span class="jt-time num" th:text="${@fmt.time(s.time)}">00:00</span>
+                    <span class="jt-dot" aria-hidden="true"><i class="bi" th:classappend="${s.kind.icon}"></i></span>
+                    <span class="jt-main">
+                        <span class="jt-name">
+                            <th:block th:text="${s.name}">Ga</th:block>
+                            <span class="jt-day" th:if="${plan.dayOffset(s) > 0}" th:text="'+' + ${plan.dayOffset(s)} + ' ngày'">+1 ngày</span>
+                        </span>
+                        <span class="jt-meta" th:switch="${s.kind.name()}">
+                            <th:block th:case="'ORIGIN'" th:text="${plan.mode == 'train'} ? 'Tàu xuất phát' : 'Xe xuất bến'">Xuất phát</th:block>
+                            <th:block th:case="'DESTINATION'" th:text="'Đến nơi · km ' + ${s.km}">Đến nơi</th:block>
+                            <th:block th:case="'REST'" th:text="${s.note} + ' · km ' + ${s.km}">Nghỉ</th:block>
+                            <th:block th:case="'PASS'" th:text="'Đi qua · km ' + ${s.km}">Đi qua</th:block>
+                            <th:block th:case="*" th:text="(${s.note != null} ? ${s.note} : 'Dừng ' + ${s.dwellMinutes} + ' phút') + ' · km ' + ${s.km}">Dừng</th:block>
+                        </span>
+                    </span>
+                </button>
+                <ul class="jt-details" th:if="${!#lists.isEmpty(s.details)}">
+                    <li th:each="d : ${s.details}" th:text="${d}">Điểm đón</li>
+                </ul>
+            </li>
+        </ol>
+    </div>
+</section>
+
+<!-- Thu vien ban do + trinh phat hanh trinh (dat cuoi trang) -->
+<th:block th:fragment="scripts">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script th:src="@{/js/journey.js}"></script>
+</th:block>
+
+<!-- ============================ XEM NHANH LO TRINH (trang ket qua) ============================ -->
+<details th:fragment="peek(plan)" class="route-peek">
+    <summary>
+        <i class="bi bi-signpost-split"></i>
+        <th:block th:if="${plan.mode == 'train'}" th:text="'Lộ trình: ' + ${plan.stationCount} + ' ga dừng · ' + ${plan.totalKm} + ' km'">Lộ trình</th:block>
+        <th:block th:if="${plan.mode == 'bus'}" th:text="'Lộ trình: ' + (${plan.restCount > 0} ? ${plan.restCount} + ' lần nghỉ' : 'chạy thẳng') + ' · ' + ${plan.totalKm} + ' km'">Lộ trình</th:block>
+        <i class="bi bi-chevron-down chev"></i>
+    </summary>
+    <ol class="peek-line">
+        <li th:each="s, ss : ${plan.stoppingPoints}" th:classappend="'pk-' + ${s.kind.css}"
+            th:style="'animation-delay:' + ${ss.index * 0.035} + 's'">
+            <span class="pk-dot" aria-hidden="true"></span>
+            <span class="pk-time num" th:text="${@fmt.time(s.time)}">00:00</span>
+            <span class="pk-name" th:text="${s.kind.name() == 'REST'} ? ${#strings.replace(s.name, 'Trạm dừng nghỉ ', 'Nghỉ ở ')} : ${s.name}">Ga</span>
+            <span class="pk-note" th:if="${s.kind.name() == 'REST' or s.longStop}" th:text="${s.dwellMinutes} + ' phút'">20 phút</span>
+        </li>
+    </ol>
+</details>
+
+</body>
+</html>

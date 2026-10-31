@@ -163,6 +163,16 @@ public class BusTrip {
         return Arrays.stream(s.split(";")).map(String::trim).filter(x -> !x.isEmpty()).toList();
     }
 
+    public long getDurationMinutes() {
+        if (departureTime == null || arrivalTime == null) return 0;
+        return Duration.between(departureTime, arrivalTime).toMinutes();
+    }
+
+    /** Gio khoi hanh tinh bang phut trong ngay (dung de sap xep tren giao dien). */
+    public int getDepartureMinuteOfDay() {
+        return departureTime == null ? 0 : departureTime.getHour() * 60 + departureTime.getMinute();
+    }
+
     public String getDurationText() {
         if (departureTime == null || arrivalTime == null) return "";
         Duration d = Duration.between(departureTime, arrivalTime);

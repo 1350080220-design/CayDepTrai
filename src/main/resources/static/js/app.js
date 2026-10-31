@@ -234,6 +234,202 @@
   };
   if (document.body.hasAttribute("data-celebrate")) VG.confetti();
 
+  /* Sắp xếp và lọc kết quả tìm chuyến; thẻ chuyến trượt tới vị trí mới (FLIP) */
+  $$(".result-tools").forEach(function (tools) {
+    var list = document.querySelector(tools.getAttribute("data-results"));
+    if (!list) return;
+    var cards = $$(".trip-ticket", list);
+    var countEl = $("[data-result-count]");
+    var empty = $(".filter-empty");
+    var unit = tools.getAttribute("data-unit") || "";
+    var state = { sort: "dep", filter: "" };
+
+    cards.forEach(function (c) {
+      c._cls = {};
+      (c.getAttribute("data-classes") || "").split(" ").forEach(function (tok) {
+        var p = tok.split(":");
+        if (p.length === 3) c._cls[p[0]] = { price: Number(p[1]) || 0, left: Number(p[2]) || 0 };
+      });
+    });
+    function num(c, key) { return Number(c.getAttribute("data-" + key)) || 0; }
+    function priceOf(c) {
+      var o = state.filter && c._cls[state.filter];
+      return o ? o.price : num(c, "price");
+    }
+
+    function apply() {
+      var before = cards.map(function (c) { return c.getBoundingClientRect(); });
+      var visible = 0;
+      cards.slice().sort(function (a, b) {
+        var va = state.sort === "price" ? priceOf(a) : num(a, state.sort);
+        var vb = state.sort === "price" ? priceOf(b) : num(b, state.sort);
+        return va - vb || num(a, "dep") - num(b, "dep");
+      }).forEach(function (c) { list.appendChild(c); });
+
+      cards.forEach(function (c) {
+        var o = state.filter && c._cls[state.filter];
+        var show = !state.filter || (o && o.left > 0);
+        if (show) visible++;
+        c.classList.toggle("is-hidden", !show);
+        c.classList.toggle("is-filtered", !!state.filter);
+        $$(".cls-chip", c).forEach(function (chip) {
+          chip.classList.toggle("match", !!state.filter && chip.getAttribute("data-type") === state.filter);
+        });
+        var pv = c.querySelector("[data-price-value]"), pl = c.querySelector("[data-price-label]");
+        if (pv) pv.textContent = VG.money(priceOf(c));
+        if (pl) pl.textContent = state.filter ? "Hạng này từ" : "Giá từ";
+      });
+
+      if (!reduceMotion && typeof Element.prototype.animate === "function") {
+        cards.forEach(function (c, i) {
+          if (c.classList.contains("is-hidden")) return;
+          var a = before[i], b = c.getBoundingClientRect();
+          if (!a.height) {
+            c.animate([{ opacity: 0, transform: "translateY(12px)" }, { opacity: 1, transform: "none" }],
+              { duration: 360, easing: "cubic-bezier(.2,.8,.2,1)" });
+          } else if (Math.abs(a.top - b.top) > 1) {
+            c.animate([{ transform: "translateY(" + (a.top - b.top) + "px)" }, { transform: "none" }],
+              { duration: 480, easing: "cubic-bezier(.2,.8,.2,1)" });
+          }
+        });
+      }
+      if (countEl) countEl.textContent = state.filter ? visible + "/" + cards.length + " " + unit : cards.length + " " + unit;
+      if (empty) empty.hidden = visible > 0;
+    }
+
+    function press(group, btn) {
+      $$(group, tools).forEach(function (b) {
+        var on = b === btn;
+        b.classList.toggle("active", on);
+        b.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+    }
+    $$("[data-sort]", tools).forEach(function (btn) {
+      btn.addEventListener("click", function () { state.sort = btn.getAttribute("data-sort"); press("[data-sort]", btn); apply(); });
+    });
+    $$("[data-filter]", tools).forEach(function (btn) {
+      btn.addEventListener("click", function () { state.filter = btn.getAttribute("data-filter"); press("[data-filter]", btn); apply(); });
+    });
+    $$("[data-filter-reset]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var all = $('[data-filter=""]', tools);
+        if (all) all.click();
+      });
+    });
+  });
+
+  /* Bảng giờ khởi hành: chữ lật kiểu bảng ga, đồng hồ chạy và đếm ngược giờ đi */
+  var board = $("[data-board]");
+  if (board) {
+    var clock = $("[data-clock]");
+    var tickClock = function () {
+      if (!clock) return;
+      var d = new Date();
+      var p2 = function (n) { return (n < 10 ? "0" : "") + n; };
+      clock.textContent = p2(d.getHours()) + ":" + p2(d.getMinutes()) + ":" + p2(d.getSeconds());
+    };
+    tickClock();
+    setInterval(tickClock, 1000);
+
+    var etaText = function (iso) {
+      var m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(iso || "");
+      if (!m) return null;
+      var dep = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]);
+      var min = Math.round((dep - new Date()) / 60000);
+      if (min <= 0) return { text: "Đang khởi hành", soon: true };
+      var d = Math.floor(min / 1440), h = Math.floor(min % 1440 / 60), mm = min % 60;
+      if (d > 0) return { text: d + " ngày " + h + " giờ", soon: false };
+      if (h > 0) return { text: h + " giờ " + mm + " phút", soon: false };
+      return { text: mm + " phút", soon: true };
+    };
+    var tickEta = function () {
+      $$("[data-dep]", board).forEach(function (row) {
+        var el = $("[data-eta]", row);
+        var r = etaText(row.getAttribute("data-dep"));
+        if (!el || !r) return;
+        el.textContent = r.text;
+        el.classList.toggle("soon", r.soon);
+      });
+    };
+    tickEta();
+    setInterval(tickEta, 30000);
+
+    /* Tách chữ: bản đọc cho trình đọc màn hình giữ nguyên, phần hiển thị được xáo trộn */
+    var GLYPHS = "ABCDEGHIKLMNOPQRSTUVXY0123456789";
+    var flaps = [];
+    $$(".board-row[data-dep]", board).forEach(function (row, r) {
+      $$("[data-flap]", row).forEach(function (el, e) {
+        var text = el.textContent.trim();
+        var sr = document.createElement("span");
+        sr.className = "visually-hidden";
+        sr.textContent = text;
+        el.parentNode.insertBefore(sr, el.nextSibling);
+        el.setAttribute("aria-hidden", "true");
+        var tiles = el.getAttribute("data-flap") === "tiles";
+        var cells = [];
+        if (tiles) {
+          el.textContent = "";
+          text.split("").forEach(function (ch) {
+            var s = document.createElement("span");
+            s.className = "fl" + (/[0-9A-Za-z]/.test(ch) ? "" : " sep");
+            s.textContent = ch;
+            el.appendChild(s);
+            cells.push(s);
+          });
+        }
+        flaps.push({ el: el, text: text, tiles: tiles, cells: cells, delay: 200 + r * 110 + e * 70 });
+      });
+    });
+
+    var settleFlaps = function () {
+      flaps.forEach(function (f) {
+        if (f.tiles) f.cells.forEach(function (c, j) { c.textContent = f.text.charAt(j); c.classList.remove("flip"); });
+        else f.el.textContent = f.text;
+      });
+    };
+    var runFlaps = function () {
+      if (reduceMotion || !flaps.length) return;
+      setTimeout(settleFlaps, 3500); /* chốt an toàn khi tab bị ẩn giữa chừng */
+      var start = null, lastFrame = 0;
+      var frame = function (ts) {
+        if (!start) start = ts;
+        if (ts - lastFrame < 45) { requestAnimationFrame(frame); return; }
+        lastFrame = ts;
+        var t = ts - start, busy = false;
+        flaps.forEach(function (f) {
+          var chars = f.text.split("");
+          var out = chars.map(function (ch, j) {
+            if (ch === " " || !/[0-9A-Za-zÀ-ỹ]/.test(ch)) return ch;
+            if (t >= f.delay + j * 32) return ch;
+            busy = true;
+            return t < f.delay - 120 ? (f.tiles ? ch : "") : GLYPHS.charAt(Math.floor(Math.random() * GLYPHS.length));
+          });
+          if (f.tiles) {
+            out.forEach(function (ch, j) {
+              var cell = f.cells[j];
+              if (cell && cell.textContent !== ch) {
+                cell.textContent = ch;
+                cell.classList.remove("flip");
+                void cell.offsetWidth;
+                cell.classList.add("flip");
+              }
+            });
+          } else {
+            f.el.textContent = out.join("");
+          }
+        });
+        if (busy) requestAnimationFrame(frame);
+      };
+      requestAnimationFrame(frame);
+    };
+    if ("IntersectionObserver" in window && !reduceMotion) {
+      var bio = new IntersectionObserver(function (entries) {
+        if (entries.some(function (e) { return e.isIntersecting; })) { bio.disconnect(); runFlaps(); }
+      }, { threshold: 0.3 });
+      bio.observe(board);
+    }
+  }
+
   /* Chỉ cho nhập chữ số */
   $$("[data-digits]").forEach(function (input) {
     input.addEventListener("input", function () {

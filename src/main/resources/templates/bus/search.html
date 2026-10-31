@@ -72,14 +72,32 @@
                     <span th:text="${from}">A</span> <i class="bi bi-arrow-right mx-1 text-soft"></i> <span th:text="${to}">B</span>
                     <span class="text-soft fw-normal" th:text="'· ' + ${@fmt.weekday(date)} + ', ' + ${@fmt.date(date)}"></span>
                 </h2>
-                <span class="text-soft small" th:text="${#lists.size(trips)} + ' chuyến'">0 chuyến</span>
+                <span class="text-soft small" data-result-count th:text="${#lists.size(trips)} + ' chuyến'">0 chuyến</span>
             </div>
 
-            <div th:each="t, st : ${trips}" class="trip-ticket" th:style="'animation-delay:' + ${st.index * 0.06} + 's'">
+            <div class="result-tools" th:unless="${#lists.isEmpty(trips)}" data-results="#trip-list" data-unit="chuyến">
+                <div class="seg" role="group" aria-label="Sắp xếp kết quả">
+                    <button type="button" class="seg-btn active" data-sort="dep" aria-pressed="true">Giờ đi sớm</button>
+                    <button type="button" class="seg-btn" data-sort="price" aria-pressed="false">Giá thấp</button>
+                    <button type="button" class="seg-btn" data-sort="dur" aria-pressed="false">Đi nhanh</button>
+                </div>
+                <div class="chip-filter" role="group" aria-label="Lọc theo loại xe" th:if="${busType == null}">
+                    <button type="button" class="cf-chip active" data-filter="" aria-pressed="true">Mọi loại xe</button>
+                    <button type="button" class="cf-chip" th:each="bt : ${busTypes}" th:if="${#lists.contains(trips.![busType], bt)}"
+                            th:classappend="'cls-' + ${bt.serviceClass.css}" th:attr="data-filter=${bt.name()}" aria-pressed="false">
+                        <span class="dot" aria-hidden="true"></span><th:block th:text="${bt.label}">Loại</th:block>
+                    </button>
+                </div>
+            </div>
+
+            <div id="trip-list">
+            <div th:each="t, st : ${trips}" class="trip-ticket" th:style="'animation-delay:' + ${st.index * 0.06} + 's'"
+                 th:attr="data-dep=${t.departureMinuteOfDay},data-dur=${t.durationMinutes},data-price=${minPrice[t.id]},data-classes=${t.busType.name() + ':' + minPrice[t.id] + ':' + available[t.id]}">
                 <div class="main">
                     <div class="d-flex align-items-center gap-2 flex-wrap">
                         <span class="fw-bold" th:text="${t.operatorName}">Nhà xe</span>
                         <span class="pill pill-bus"><i class="bi" th:classappend="${t.busType.icon}"></i><th:block th:text="${t.busType.label}">Loại</th:block></span>
+                        <span class="cls-badge" th:classappend="'cls-' + ${t.busType.serviceClass.css}" th:text="${t.busType.serviceClass.label}">VIP</span>
                     </div>
                     <div class="timeline">
                         <div>
@@ -97,19 +115,33 @@
                         </div>
                     </div>
                     <div class="d-flex align-items-center gap-3 small text-soft flex-wrap">
-                        <span><i class="bi bi-luggage me-1"></i>20 kg miễn phí</span>
-                        <span class="d-inline-flex align-items-center gap-2">
-                            <span class="seat-meter"><span th:style="'width:' + ${available[t.id] * 100 / t.capacity} + '%'"></span></span>
-                            <th:block th:text="'Còn ' + ${available[t.id]} + '/' + ${t.capacity} + ' chỗ'">còn</th:block>
+                        <span class="amen-row" aria-label="Tiện ích trên xe">
+                            <span class="amen" th:each="a : ${t.busType.amenities}" th:attr="data-tip=${a.label}" tabindex="0">
+                                <i class="bi" th:classappend="${a.icon}" aria-hidden="true"></i><span class="visually-hidden" th:text="${a.label}">tiện ích</span>
+                            </span>
                         </span>
+                        <span><i class="bi bi-luggage me-1"></i>20 kg miễn phí</span>
                     </div>
+                    <details th:replace="~{fragments/journey :: peek(${plans[t.id]})}"></details>
                 </div>
                 <div class="stub">
                     <div class="price num"><small>Giá hiện tại từ</small><th:block th:text="${@fmt.money(minPrice[t.id])}">0đ</th:block></div>
-                    <a th:if="${!closed[t.id] and available[t.id] > 0}" class="btn btn-coach" th:href="@{/xe-khach/chuyen/{id}(id=${t.id})}">Chọn ghế</a>
+                    <span class="small text-soft d-inline-flex align-items-center gap-2">
+                        <span class="seat-meter"><span th:style="'width:' + ${available[t.id] * 100 / t.capacity} + '%'"></span></span>
+                        <th:block th:text="'Còn ' + ${available[t.id]} + '/' + ${t.capacity}">còn</th:block>
+                    </span>
+                    <a th:if="${!closed[t.id] and available[t.id] > 0}" class="btn btn-coach" th:href="@{/xe-khach/chuyen/{id}(id=${t.id})}">Chọn chỗ</a>
                     <span th:if="${closed[t.id]}" class="pill">Đã đóng bán</span>
                     <span th:if="${!closed[t.id] and available[t.id] == 0}" class="pill">Hết chỗ</span>
                 </div>
+            </div>
+            </div>
+
+            <div class="panel empty-state filter-empty" hidden>
+                <i class="bi bi-funnel ill"></i>
+                <h3 class="h5">Không còn chuyến nào thuộc loại xe này</h3>
+                <p class="text-soft">Chọn loại xe khác hoặc xem tất cả các chuyến trong ngày.</p>
+                <button type="button" class="btn btn-ghost" data-filter-reset>Xem mọi loại xe</button>
             </div>
 
             <div class="panel empty-state" th:if="${#lists.isEmpty(trips)}">
@@ -125,9 +157,9 @@
         </th:block>
 
         <div class="row g-3" th:if="${!searched}">
-            <div class="col-md-4" th:each="tip, st : ${ {'Giá động: xe càng vắng, giá càng tốt. Đặt sớm để có giá thấp nhất.', 'Nhóm từ 4 khách được giảm thêm 5% tổng giá vé.', 'Có thể chọn xe trung chuyển đón tận nhà (50.000đ/đơn).'} }">
+            <div class="col-md-4" th:each="tip, st : ${ {'Bốn loại xe: ghế ngồi phổ thông, giường nằm, phòng cabin riêng tư và Limousine VIP.', 'Giá động: xe càng vắng, giá càng tốt. Đặt sớm để có giá thấp nhất.', 'Có thể chọn xe trung chuyển đón tận nhà (50.000đ/đơn).'} }">
                 <div class="panel panel-pad h-100 reveal" th:attr="data-delay=${st.index + 1}">
-                    <i class="bi fs-3 text-warning" th:classappend="${st.index == 0} ? 'bi-graph-up-arrow' : (${st.index == 1} ? 'bi-people' : 'bi-house-door')"></i>
+                    <i class="bi fs-3 text-warning" th:classappend="${st.index == 0} ? 'bi-door-closed' : (${st.index == 1} ? 'bi-graph-up-arrow' : 'bi-house-door')"></i>
                     <p class="mb-0 mt-2" th:text="${tip}">tip</p>
                 </div>
             </div>

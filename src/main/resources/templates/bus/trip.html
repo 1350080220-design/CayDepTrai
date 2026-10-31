@@ -41,6 +41,13 @@
                         <span class="pill"><i class="bi bi-building"></i><th:block th:text="${trip.operatorName}">Nhà xe</th:block></span>
                         <span class="pill pill-bus"><i class="bi" th:classappend="${trip.busType.icon}"></i><th:block th:text="${trip.busType.label}">Loại</th:block></span>
                         <span class="pill"><i class="bi bi-card-text"></i><th:block th:text="${trip.licensePlate}">Biển số</th:block></span>
+                        <span class="cls-badge" th:classappend="'cls-' + ${trip.busType.serviceClass.css}" th:text="${trip.busType.serviceClass.label}">VIP</span>
+                        <a class="pill pill-link" href="#lo-trinh"><i class="bi bi-map"></i><th:block th:text="${plan.restCount > 0} ? 'Lộ trình · ' + ${plan.restCount} + ' lần nghỉ' : 'Lộ trình'">Lộ trình</th:block></a>
+                    </div>
+                    <div class="amen-row justify-content-lg-end mt-3 d-flex" aria-label="Tiện ích trên xe">
+                        <span class="amen amen-wide" th:each="a : ${trip.busType.amenities}">
+                            <i class="bi" th:classappend="${a.icon}" aria-hidden="true"></i><th:block th:text="${a.label}">tiện ích</th:block>
+                        </span>
                     </div>
                 </div>
             </div>
@@ -80,7 +87,7 @@
                     </div>
 
                     <div class="deck-wrap"
-                         th:with="seatCls=${trip.busType.name() == 'SLEEPER_36' ? 'sleeper' : (trip.busType.name() == 'LIMOUSINE_9' ? 'limo' : '')}">
+                         th:with="seatCls=${trip.busType.name() == 'SLEEPER_36' ? 'sleeper' : (trip.busType.name() == 'LIMOUSINE_9' ? 'limo' : (trip.busType.name() == 'CABIN_24' ? 'cabin' : ''))}">
                         <div class="bus-shell" th:each="deck, ds : ${decks}">
                             <div class="front">
                                 <span th:text="${deck.name}">Tầng dưới</span>
@@ -102,6 +109,7 @@
                     <p class="small text-soft mt-3 mb-0 text-center">
                         <th:block th:if="${trip.busType.name() == 'SLEEPER_36'}">Giường tầng dưới (A) cao hơn 10% so với tầng trên (B).</th:block>
                         <th:block th:if="${trip.busType.name() == 'LIMOUSINE_9'}">Hàng ghế VIP đầu xe (L1, L2) cao hơn 15%.</th:block>
+                        <th:block th:if="${trip.busType.name() == 'CABIN_24'}">Mỗi phòng cabin có rèm, màn hình và cổng sạc riêng; phòng tầng dưới (A) cao hơn 10%.</th:block>
                         <th:block th:if="${trip.busType.name() == 'SEAT_45'}">Ghế A01 gần cửa lên xuống, hàng cuối 5 ghế liền nhau.</th:block>
                     </p>
                 </div>
@@ -152,11 +160,14 @@
                 </div>
             </div>
         </div>
+
+        <section th:replace="~{fragments/journey :: journey(${plan}, ${routeJson})}"></section>
     </div>
 </main>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>
 <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
 <script th:src="@{/js/seatmap.js}"></script>
+<th:block th:replace="~{fragments/journey :: scripts}"></th:block>
 </body>
 </html>

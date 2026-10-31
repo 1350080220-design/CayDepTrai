@@ -40,6 +40,11 @@ public class TrainTripForm {
     @NotNull(message = "Nhập số toa (0 nếu không có)")
     @Min(value = 0, message = "Số toa không được âm")
     @Max(value = 8, message = "Tối đa 8 toa mỗi loại")
+    private Integer hardSeatCoaches = 1;
+
+    @NotNull(message = "Nhập số toa (0 nếu không có)")
+    @Min(value = 0, message = "Số toa không được âm")
+    @Max(value = 8, message = "Tối đa 8 toa mỗi loại")
     private Integer softSeatCoaches = 2;
 
     @NotNull(message = "Nhập số toa (0 nếu không có)")
@@ -51,6 +56,11 @@ public class TrainTripForm {
     @Min(value = 0, message = "Số toa không được âm")
     @Max(value = 8, message = "Tối đa 8 toa mỗi loại")
     private Integer sleeper4Coaches = 1;
+
+    @NotNull(message = "Nhập số toa (0 nếu không có)")
+    @Min(value = 0, message = "Số toa không được âm")
+    @Max(value = 8, message = "Tối đa 8 toa mỗi loại")
+    private Integer vip2Coaches = 0;
 
     private boolean active = true;
 
@@ -108,6 +118,22 @@ public class TrainTripForm {
 
     public void setDistanceKm(Integer distanceKm) {
         this.distanceKm = distanceKm;
+    }
+
+    public Integer getHardSeatCoaches() {
+        return hardSeatCoaches;
+    }
+
+    public void setHardSeatCoaches(Integer hardSeatCoaches) {
+        this.hardSeatCoaches = hardSeatCoaches;
+    }
+
+    public Integer getVip2Coaches() {
+        return vip2Coaches;
+    }
+
+    public void setVip2Coaches(Integer vip2Coaches) {
+        this.vip2Coaches = vip2Coaches;
     }
 
     public Integer getSoftSeatCoaches() {

@@ -115,6 +115,11 @@
                     </div>
                 </div>
 
+                <!-- ============ LO TRINH ============ -->
+                <th:block th:if="${plan != null and b.status.name() != 'CANCELLED' and b.status.name() != 'EXPIRED'}">
+                    <section th:replace="~{fragments/journey :: journey(${plan}, ${routeJson})}"></section>
+                </th:block>
+
                 <!-- ============ HANH KHACH ============ -->
                 <div class="panel mb-4">
                     <div class="panel-head"><h2 class="h5">Hành khách</h2><span class="pill" th:text="${b.passengerCount} + ' vé'">vé</span></div>
@@ -184,5 +189,6 @@
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>
 <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+<th:block th:if="${plan != null}"><th:block th:replace="~{fragments/journey :: scripts}"></th:block></th:block>
 </body>
 </html>

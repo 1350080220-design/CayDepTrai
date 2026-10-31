@@ -8,6 +8,8 @@ import com.vietgo.domain.BookingStatus;
 import com.vietgo.domain.PaymentMethod;
 import com.vietgo.domain.TicketType;
 import com.vietgo.domain.User;
+import com.vietgo.route.RoutePlan;
+import com.vietgo.route.RoutePlanner;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,11 +30,14 @@ public class BookingController {
     private final BookingService bookingService;
     private final CurrentUser currentUser;
     private final QrCodeService qr;
+    private final RoutePlanner routePlanner;
 
-    public BookingController(BookingService bookingService, CurrentUser currentUser, QrCodeService qr) {
+    public BookingController(BookingService bookingService, CurrentUser currentUser, QrCodeService qr,
+                             RoutePlanner routePlanner) {
         this.bookingService = bookingService;
         this.currentUser = currentUser;
         this.qr = qr;
+        this.routePlanner = routePlanner;
     }
 
     @GetMapping
@@ -61,6 +66,11 @@ public class BookingController {
         Booking b = bookingService.getForUser(code, u);
         model.addAttribute("b", b);
         model.addAttribute("methods", PaymentMethod.values());
+        RoutePlan plan = routePlanner.forBooking(b);
+        if (plan != null) {
+            model.addAttribute("plan", plan);
+            model.addAttribute("routeJson", routePlanner.toJson(plan));
+        }
         if (b.isPaid()) {
             model.addAttribute("qr", qr.toDataUri("VIETGO|" + b.getCode() + "|" + b.getTicketType().name()
                     + "|" + b.getPassengerCount(), 220));

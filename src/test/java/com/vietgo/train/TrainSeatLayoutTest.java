@@ -24,6 +24,20 @@ class TrainSeatLayoutTest {
     }
 
     @Test
+    void newCoachClassesHaveConsistentLayouts() {
+        for (TrainCoachType type : TrainCoachType.values()) {
+            if (type.isSleeper()) {
+                assertEquals(0, type.getCapacity() % type.getBerthsPerCompartment(), type.name());
+            } else {
+                assertEquals(0, type.getCapacity() % type.getSeatsAcross(), type.name());
+            }
+        }
+        assertEquals(1, TrainSeatLayout.tierOf(TrainCoachType.VIP_2, 14));
+        assertEquals(7, TrainSeatLayout.compartmentOf(TrainCoachType.VIP_2, 14));
+        assertEquals("Toa 8 · Giường 3 (khoang VIP 2)", TrainSeatLayout.label(TrainCoachType.VIP_2, 8, 3));
+    }
+
+    @Test
     void seatExistence() {
         TrainTrip t = TrainFareCalculatorTest.trip(300, LocalDateTime.of(2027, 3, 9, 8, 0));
         assertTrue(TrainSeatLayout.exists(t, "1-64"));

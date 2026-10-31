@@ -60,22 +60,32 @@
             </div>
 
             <h2 class="h6 mt-4 mb-2">Cơ cấu đoàn tàu</h2>
-            <p class="small text-soft">Toa được đánh số theo thứ tự: ngồi mềm → giường khoang 6 → giường khoang 4. Tổng 1–15 toa.</p>
+            <p class="small text-soft">Toa được đánh số theo thứ tự: ngồi cứng → ngồi mềm → giường khoang 6 → giường khoang 4 → khoang VIP. Tổng 1–15 toa.</p>
             <div class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label" for="softSeatCoaches">Toa ngồi mềm (64 chỗ)</label>
+                <div class="col-6 col-md-4 col-xl">
+                    <label class="form-label" for="hardSeatCoaches">Ngồi cứng (80 chỗ)</label>
+                    <input class="form-control" type="number" th:field="*{hardSeatCoaches}" min="0" max="8" th:errorclass="is-invalid">
+                    <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('hardSeatCoaches')}" th:errors="*{hardSeatCoaches}"></div>
+                </div>
+                <div class="col-6 col-md-4 col-xl">
+                    <label class="form-label" for="softSeatCoaches">Ngồi mềm (64 chỗ)</label>
                     <input class="form-control" type="number" th:field="*{softSeatCoaches}" min="0" max="8" th:errorclass="is-invalid">
                     <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('softSeatCoaches')}" th:errors="*{softSeatCoaches}"></div>
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label" for="sleeper6Coaches">Toa giường khoang 6 (42 chỗ)</label>
+                <div class="col-6 col-md-4 col-xl">
+                    <label class="form-label" for="sleeper6Coaches">Khoang 6 (42 giường)</label>
                     <input class="form-control" type="number" th:field="*{sleeper6Coaches}" min="0" max="8" th:errorclass="is-invalid">
                     <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('sleeper6Coaches')}" th:errors="*{sleeper6Coaches}"></div>
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label" for="sleeper4Coaches">Toa giường khoang 4 (28 chỗ)</label>
+                <div class="col-6 col-md-4 col-xl">
+                    <label class="form-label" for="sleeper4Coaches">Khoang 4 (28 giường)</label>
                     <input class="form-control" type="number" th:field="*{sleeper4Coaches}" min="0" max="8" th:errorclass="is-invalid">
                     <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('sleeper4Coaches')}" th:errors="*{sleeper4Coaches}"></div>
+                </div>
+                <div class="col-6 col-md-4 col-xl">
+                    <label class="form-label" for="vip2Coaches">Khoang VIP 2 (14 giường)</label>
+                    <input class="form-control" type="number" th:field="*{vip2Coaches}" min="0" max="8" th:errorclass="is-invalid">
+                    <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('vip2Coaches')}" th:errors="*{vip2Coaches}"></div>
                 </div>
             </div>
 

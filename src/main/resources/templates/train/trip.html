@@ -41,6 +41,7 @@
                         <span class="pill pill-train"><i class="bi bi-train-front"></i><th:block th:text="'Tàu ' + ${trip.trainCode}">SE1</th:block></span>
                         <span class="pill"><i class="bi bi-signpost"></i><th:block th:text="${trip.distanceKm} + ' km'">km</th:block></span>
                         <span class="pill"><i class="bi bi-hourglass-split"></i><th:block th:text="'Giữ chỗ ' + ${holdMinutes} + ' phút'">giữ</th:block></span>
+                        <a class="pill pill-link" href="#lo-trinh"><i class="bi bi-map"></i><th:block th:text="'Lộ trình ' + ${plan.stationCount} + ' ga dừng'">Lộ trình</th:block></a>
                     </div>
                 </div>
             </div>
@@ -62,15 +63,36 @@
                         </div>
                     </div>
 
+                    <div class="class-cards" role="group" aria-label="Chọn hạng chỗ">
+                        <button type="button" class="class-card" th:each="o : ${classOptions}"
+                                th:classappend="'cls-' + ${o.type.serviceClass.css} + (${o.soldOut} ? ' sold' : '')"
+                                th:attr="data-class=${o.type.name()},data-first=${o.coachNos[0]}" aria-pressed="false">
+                            <span class="cc-top">
+                                <i class="bi" th:classappend="${o.type.icon}" aria-hidden="true"></i>
+                                <span class="cls-badge" th:text="${o.type.serviceClass.label}">Phổ thông</span>
+                            </span>
+                            <span class="cc-name" th:text="${o.type.label}">Ngồi cứng</span>
+                            <span class="cc-price num"><small>từ </small><strong th:text="${@fmt.money(o.minPrice)}">0đ</strong></span>
+                            <span class="cc-left" th:text="${o.soldOut} ? 'Hết chỗ' : 'Còn ' + ${o.available} + ' chỗ · toa ' + ${o.coachList}">còn</span>
+                            <span class="amen-row" aria-hidden="true">
+                                <span class="amen" th:each="a : ${o.type.amenities}" th:attr="data-tip=${a.label}"><i class="bi" th:classappend="${a.icon}"></i></span>
+                            </span>
+                            <span class="visually-hidden" th:text="'Tiện ích: ' + ${#strings.listJoin(o.type.amenities.![label], ', ')}">tiện ích</span>
+                        </button>
+                    </div>
+
                     <div class="train-strip" aria-hidden="true">
                         <span class="loco"></span>
-                        <button type="button" class="car" th:each="c, cs : ${coaches}" th:classappend="${cs.first} ? 'active' : ''"
-                                th:attr="data-coach=${c.coachNo}" th:text="${c.coachNo}" tabindex="-1">1</button>
+                        <button type="button" class="car" th:each="c, cs : ${coaches}"
+                                th:classappend="'cls-' + ${c.type.serviceClass.css} + (${cs.first} ? ' active' : '')"
+                                th:attr="data-coach=${c.coachNo},data-class=${c.type.name()}" th:text="${c.coachNo}" tabindex="-1">1</button>
                     </div>
 
                     <div class="coach-tabs" role="tablist" aria-label="Chọn toa">
                         <button type="button" class="coach-tab" role="tab" th:each="c, cs : ${coaches}"
-                                th:classappend="${cs.first} ? 'active' : ''" th:attr="data-coach-tab=${c.coachNo},aria-selected=${cs.first}">
+                                th:classappend="'cls-' + ${c.type.serviceClass.css} + (${cs.first} ? ' active' : '')"
+                                th:attr="data-coach-tab=${c.coachNo},data-class=${c.type.name()},aria-selected=${cs.first}">
+                            <span class="cls-line" aria-hidden="true"></span>
                             <span class="badge-sel">0</span>
                             <span class="no" th:text="'Toa ' + ${c.coachNo}">Toa 1</span>
                             <span class="ty" th:text="${c.type.label}">Ngồi mềm</span>
@@ -89,10 +111,10 @@
                             <!-- Toa ghe ngoi: 4 hang, loi di o giua -->
                             <div class="seat-grid" th:unless="${c.sleeper}">
                                 <th:block th:each="row, rs : ${c.rows}">
-                                    <div class="aisle-gap" th:if="${rs.index == 2}">lối đi</div>
+                                    <div class="aisle-gap" th:if="${rs.index == c.type.aisleAfter}">lối đi</div>
                                     <div class="seat-row">
                                         <button type="button" class="seat" th:each="s : ${row}"
-                                                th:classappend="${s.taken} ? 'taken' : ''"
+                                                th:classappend="(${c.type.name() == 'HARD_SEAT'} ? 'hard ' : '') + (${s.taken} ? 'taken' : '')"
                                                 th:disabled="${s.taken or !open}"
                                                 th:attr="data-key=${s.key},data-label=${s.label},data-price=${s.price},data-coach=${c.coachNo},aria-label=${s.label} + (${s.taken} ? ' – đã đặt' : '')"
                                                 aria-pressed="false" th:text="${s.number}">1</button>
@@ -102,12 +124,12 @@
 
                             <!-- Toa giuong nam: tung khoang, tang tren o tren -->
                             <div class="compartments" th:if="${c.sleeper}">
-                                <div class="compartment" th:each="comp, ks : ${c.compartments}">
-                                    <div class="cap" th:text="'Khoang ' + ${ks.count}">Khoang 1</div>
+                                <div class="compartment" th:each="comp, ks : ${c.compartments}" th:classappend="${c.type.tiers == 1} ? 'vip' : ''">
+                                    <div class="cap" th:text="(${c.type.tiers == 1} ? 'VIP ' : 'Khoang ') + ${ks.count}">Khoang 1</div>
                                     <div class="tier" th:each="tier : ${comp}">
-                                        <span class="tier-label" th:text="'T' + ${tier[0].tier}">T1</span>
+                                        <span class="tier-label" th:text="'T' + ${tier[0].tier}" th:if="${c.type.tiers > 1}">T1</span>
                                         <button type="button" class="seat berth" th:each="s : ${tier}"
-                                                th:classappend="${s.taken} ? 'taken' : ''"
+                                                th:classappend="(${c.type.tiers == 1} ? 'vip ' : '') + (${s.taken} ? 'taken' : '')"
                                                 th:disabled="${s.taken or !open}"
                                                 th:attr="data-key=${s.key},data-label=${s.label},data-price=${s.price},data-coach=${c.coachNo},aria-label=${s.label} + (${s.taken} ? ' – đã đặt' : '')"
                                                 aria-pressed="false" th:text="${s.number}">1</button>
@@ -183,11 +205,14 @@
                 </div>
             </div>
         </div>
+
+        <section th:replace="~{fragments/journey :: journey(${plan}, ${routeJson})}"></section>
     </div>
 </main>
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>
 <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
 <script th:src="@{/js/seatmap.js}"></script>
+<th:block th:replace="~{fragments/journey :: scripts}"></th:block>
 </body>
 </html>

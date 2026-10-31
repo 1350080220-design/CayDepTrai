@@ -43,9 +43,11 @@ public class AdminTripService {
         f.setDepartureTime(t.getDepartureTime());
         f.setArrivalTime(t.getArrivalTime());
         f.setDistanceKm(t.getDistanceKm());
+        f.setHardSeatCoaches((int) t.countCoaches(TrainCoachType.HARD_SEAT));
         f.setSoftSeatCoaches((int) t.countCoaches(TrainCoachType.SOFT_SEAT));
         f.setSleeper6Coaches((int) t.countCoaches(TrainCoachType.SLEEPER_6));
         f.setSleeper4Coaches((int) t.countCoaches(TrainCoachType.SLEEPER_4));
+        f.setVip2Coaches((int) t.countCoaches(TrainCoachType.VIP_2));
         f.setActive(t.isActive());
         return f;
     }
@@ -76,9 +78,10 @@ public class AdminTripService {
                 errors.rejectValue("departureTime", "past", "Chuyến mới phải khởi hành sau thời điểm hiện tại ít nhất 1 giờ");
             }
         }
-        int total = nz(f.getSoftSeatCoaches()) + nz(f.getSleeper6Coaches()) + nz(f.getSleeper4Coaches());
+        int total = nz(f.getHardSeatCoaches()) + nz(f.getSoftSeatCoaches()) + nz(f.getSleeper6Coaches())
+                + nz(f.getSleeper4Coaches()) + nz(f.getVip2Coaches());
         if (total < 1 || total > 15) {
-            errors.rejectValue("softSeatCoaches", "total", "Đoàn tàu phải có từ 1 đến 15 toa khách (hiện " + total + ")");
+            errors.rejectValue("hardSeatCoaches", "total", "Đoàn tàu phải có từ 1 đến 15 toa khách (hiện " + total + ")");
         }
         if (f.getTrainCode() != null && f.getDepartureTime() != null) {
             String code = f.getTrainCode().trim().toUpperCase();
@@ -93,9 +96,11 @@ public class AdminTripService {
             boolean structural = !Objects.equals(o.getOriginStation(), f.getOriginStation())
                     || !Objects.equals(o.getDestinationStation(), f.getDestinationStation())
                     || !Objects.equals(o.getDistanceKm(), f.getDistanceKm())
+                    || !Objects.equals(o.getHardSeatCoaches(), f.getHardSeatCoaches())
                     || !Objects.equals(o.getSoftSeatCoaches(), f.getSoftSeatCoaches())
                     || !Objects.equals(o.getSleeper6Coaches(), f.getSleeper6Coaches())
-                    || !Objects.equals(o.getSleeper4Coaches(), f.getSleeper4Coaches());
+                    || !Objects.equals(o.getSleeper4Coaches(), f.getSleeper4Coaches())
+                    || !Objects.equals(o.getVip2Coaches(), f.getVip2Coaches());
             if (structural) {
                 errors.reject("locked", "Chuyến đã có khách đặt: không được đổi hành trình, cự ly hay cơ cấu toa. "
                         + "Chỉ có thể đổi giờ chạy hoặc tạm dừng bán.");
@@ -121,9 +126,11 @@ public class AdminTripService {
                 trainRepo.saveAndFlush(t); // xoa toa cu truoc khi them toa moi (tranh trung so toa)
             }
             int no = 1;
+            for (int i = 0; i < nz(f.getHardSeatCoaches()); i++) t.addCoach(no++, TrainCoachType.HARD_SEAT);
             for (int i = 0; i < nz(f.getSoftSeatCoaches()); i++) t.addCoach(no++, TrainCoachType.SOFT_SEAT);
             for (int i = 0; i < nz(f.getSleeper6Coaches()); i++) t.addCoach(no++, TrainCoachType.SLEEPER_6);
             for (int i = 0; i < nz(f.getSleeper4Coaches()); i++) t.addCoach(no++, TrainCoachType.SLEEPER_4);
+            for (int i = 0; i < nz(f.getVip2Coaches()); i++) t.addCoach(no++, TrainCoachType.VIP_2);
         }
         return trainRepo.save(t);
     }

@@ -140,7 +140,33 @@
     });
     $$(".train-strip .car").forEach(function (c) { c.classList.toggle("active", c.getAttribute("data-coach") === no); });
     $$(".coach-pane").forEach(function (p) { p.classList.toggle("show", p.getAttribute("data-coach-pane") === no); });
+    /* đang lọc theo hạng mà mở toa khác hạng: chuyển bộ lọc sang hạng của toa đó */
+    var tab = document.querySelector('[data-coach-tab="' + no + '"]');
+    var cls = tab && tab.getAttribute("data-class");
+    var pressed = document.querySelector('.class-card[aria-pressed="true"]');
+    if (pressed && cls && pressed.getAttribute("data-class") !== cls) applyClass(cls);
   }
+
+  /* Chọn hạng chỗ: làm mờ toa khác hạng, mở toa đầu tiên của hạng đã chọn */
+  var classCards = $$(".class-card");
+  function applyClass(cls) {
+    classCards.forEach(function (c) { c.setAttribute("aria-pressed", cls && c.getAttribute("data-class") === cls ? "true" : "false"); });
+    $$("[data-coach-tab], .train-strip .car").forEach(function (el) {
+      el.classList.toggle("dim", !!cls && el.getAttribute("data-class") !== cls);
+    });
+    var sel = document.getElementById("suggest-type");
+    if (sel) {
+      var has = $$("option", sel).some(function (o) { return o.value === cls; });
+      sel.value = cls && has ? cls : "";
+    }
+  }
+  classCards.forEach(function (card) {
+    card.addEventListener("click", function () {
+      var on = card.getAttribute("aria-pressed") !== "true";
+      applyClass(on ? card.getAttribute("data-class") : "");
+      if (on) showCoach(card.getAttribute("data-first"));
+    });
+  });
   $$("[data-coach-tab]").forEach(function (t) {
     t.addEventListener("click", function () { showCoach(t.getAttribute("data-coach-tab")); });
   });
